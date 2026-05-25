@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F2E1E">
+<title>Relevamiento Aserraderos · Proyecto Ituzaingó</title>
+
+
+<style>
+:root {
+  --bg:        #0F2E1E;
+  --bg2:       #1B392D;
+  --bg3:       #2B6046;
+  --card:      #1B392D;
+  --border:    #2B6046;
+  --accent:    #59A77F;
+  --accent2:   #9ADAB7;
+  --danger:    #2B6046;
+  --text:      #FFFFFF;
+  --text2:     #CCE6D9;
+  --text3:     #3A8B6B;
+  --mono:      'Calibri', sans-serif;
+  --sans:      'Calibri', sans-serif;
+  --r:         10px;
+  --r2:        6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+/* ── SPLASH ── */
+#splash {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; z-index: 999; transition: opacity 0.4s;
+}
+#splash h1 { font-family: var(--mono); font-size: 1.1rem; color: var(--accent); letter-spacing: 0.08em; }
+#splash p { font-size: 0.8rem; color: var(--text2); }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SHELL ── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-logo { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; line-height: 1.3; }
+.topbar-sub { font-size: 0.68rem; color: var(--text2); }
+.topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.badge-sync { font-size: 0.65rem; font-family: var(--mono); padding: 3px 8px; border-radius: 20px; }
+.badge-sync.online { background: #0e3d2e; color: var(--accent); border: 1px solid var(--accent); }
+.badge-sync.offline { background: #3d1a0e; color: #e07050; border: 1px solid #e07050; }
+
+/* ── NAV TABS ── */
+.nav-tabs {
+  display: flex; overflow-x: auto; scrollbar-width: none;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab {
+  flex-shrink: 0; padding: 10px 14px;
+  font-size: 0.7rem; font-family: var(--mono); letter-spacing: 0.04em;
+  color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.2s; white-space: nowrap;
+}
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-tab.done { color: var(--text2); }
+.nav-tab.done::after { content: ' ✓'; color: var(--accent); }
+
+/* ── MAIN ── */
+.main { flex: 1; padding: 16px; max-width: 680px; margin: 0 auto; width: 100%; padding-bottom: 100px; }
+
+/* ── SECTION HEADER ── */
+.section-hdr {
+  background: linear-gradient(135deg, var(--bg3), var(--bg2));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.section-hdr h2 { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 4px; }
+.section-hdr p { font-size: 0.75rem; color: var(--text2); }
+
+/* ── QUESTION CARD ── */
+.qcard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 14px;
+  transition: border-color 0.2s;
+}
+.qcard:focus-within { border-color: var(--accent); }
+.qcard.error { border-color: var(--danger); }
+
+.qlabel {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
+}
+.qnum {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--accent2);
+  background: #1B392D; border: 1px solid #4a3500;
+  border-radius: 4px; padding: 2px 7px; flex-shrink: 0; margin-top: 2px;
+}
+.qtext { font-size: 0.88rem; font-weight: 500; line-height: 1.4; color: var(--text); }
+.qnota { font-size: 0.72rem; color: var(--text2); margin-top: 2px; font-style: italic; }
+.qreq { color: var(--danger); margin-left: 3px; }
+
+/* ── RADIO / CHECK OPTIONS ── */
+.options { display: flex; flex-direction: column; gap: 8px; }
+.opt-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 10px 12px; cursor: pointer;
+  transition: all 0.15s; user-select: none;
+}
+.opt-item:active { transform: scale(0.985); }
+.opt-item.selected { background: #0F2E1E; border-color: var(--accent); }
+.opt-item input[type=radio], .opt-item input[type=checkbox] { display: none; }
+.opt-circle {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--text3); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.opt-square {
+  width: 18px; height: 18px; border-radius: 4px;
+  border: 2px solid var(--text3); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.opt-item.selected .opt-circle { border-color: var(--accent); background: var(--accent); }
+.opt-item.selected .opt-square { border-color: var(--accent); background: var(--accent); }
+.opt-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--bg); opacity: 0; transition: opacity 0.15s; }
+.opt-item.selected .opt-circle::after { opacity: 1; }
+.opt-square::after { content: '✓'; font-size: 11px; color: var(--bg); opacity: 0; transition: opacity 0.15s; line-height: 1; }
+.opt-item.selected .opt-square::after { opacity: 1; }
+.opt-label { font-size: 0.84rem; color: var(--text); line-height: 1.3; }
+
+/* ── NUM INPUT ── */
+.num-group { display: flex; align-items: center; gap: 8px; }
+.num-input {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 10px 14px;
+  font-family: var(--mono); font-size: 1rem; color: var(--text);
+  width: 100%; outline: none; transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.num-input:focus { border-color: var(--accent); }
+.num-unit { font-size: 0.75rem; color: var(--text2); white-space: nowrap; font-family: var(--mono); flex-shrink: 0; }
+.num-fields { display: flex; flex-direction: column; gap: 8px; }
+.num-row { display: grid; gap: 8px; }
+
+/* ── TEXT INPUT ── */
+.text-input {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 10px 14px;
+  font-family: var(--sans); font-size: 0.85rem; color: var(--text);
+  width: 100%; outline: none; transition: border-color 0.2s;
+  resize: vertical; min-height: 64px;
+}
+.text-input:focus { border-color: var(--accent); }
+.text-hint { font-size: 0.68rem; color: var(--text3); margin-top: 5px; font-style: italic; }
+
+/* ── CALC FIELD ── */
+.calc-display {
+  background: #0F2E1E; border: 1px solid #1a4a28;
+  border-radius: var(--r2); padding: 10px 14px;
+  font-family: var(--mono); font-size: 1.1rem; color: var(--accent);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.calc-display .calc-val { font-size: 1.3rem; font-weight: 600; }
+.calc-formula { font-size: 0.65rem; color: var(--text3); margin-top: 4px; font-style: italic; }
+
+/* ── MULTI NUM INLINE ── */
+.inline-nums { display: flex; flex-wrap: wrap; gap: 10px; }
+.inline-num { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 100px; }
+.inline-num label { font-size: 0.68rem; color: var(--text2); font-family: var(--mono); letter-spacing: 0.03em; }
+
+/* ── OBS DIRECTA ── */
+.obs-block {
+  background: #1a1500; border: 1px solid #3a2e00;
+  border-radius: var(--r); padding: 14px; margin-bottom: 14px;
+}
+.obs-block h4 { font-size: 0.7rem; font-family: var(--mono); color: var(--accent2); letter-spacing: 0.08em; margin-bottom: 10px; }
+.obs-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; margin-bottom: 6px;
+  background: #211a00; border: 1px solid #3a2e00;
+  border-radius: var(--r2); cursor: pointer;
+}
+.obs-item:last-child { margin-bottom: 0; }
+.obs-label { font-size: 0.78rem; color: #c8b870; flex: 1; line-height: 1.35; }
+.obs-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.obs-btn {
+  font-size: 0.65rem; font-family: var(--mono); padding: 4px 8px;
+  border-radius: 4px; border: 1px solid #4a3a00; background: #2a2200;
+  color: #8a7840; cursor: pointer; transition: all 0.15s;
+}
+.obs-btn.active-si { background: #0e3d2e; border-color: var(--accent); color: var(--accent); }
+.obs-btn.active-no { background: #3d1a0e; border-color: #e07050; color: #e07050; }
+.obs-btn.active-na { background: #1a1e2e; border-color: #4a6090; color: #CCE6D9; }
+
+/* ── SECTION DIVIDER ── */
+.sdiv { margin: 20px 0 14px; display: flex; align-items: center; gap: 10px; }
+.sdiv span { font-size: 0.68rem; font-family: var(--mono); color: var(--text3); letter-spacing: 0.06em; white-space: nowrap; }
+.sdiv::before, .sdiv::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── NOTES BOX ── */
+.notes-box { margin-top: 10px; }
+.notes-box label { font-size: 0.68rem; font-family: var(--mono); color: var(--text3); letter-spacing: 0.06em; display: block; margin-bottom: 6px; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  padding: 12px 16px; display: flex; gap: 10px;
+  max-width: 680px; margin: 0 auto;
+}
+.btn {
+  flex: 1; padding: 12px; border-radius: var(--r2);
+  font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.04em;
+  border: none; cursor: pointer; transition: all 0.15s; font-weight: 600;
+}
+.btn-prev { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-next { background: var(--accent); color: var(--bg); }
+.btn-submit { background: var(--accent2); color: var(--bg); flex: 2; }
+.btn:active { transform: scale(0.97); opacity: 0.9; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── PROGRESS ── */
+.progress-bar { height: 3px; background: var(--border); position: relative; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+
+/* ── MODAL / SUCCESS ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; padding: 20px;
+}
+.modal {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 28px; max-width: 380px; width: 100%; text-align: center;
+}
+.modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.modal h3 { font-family: var(--mono); color: var(--accent); margin-bottom: 8px; font-size: 1rem; }
+.modal p { font-size: 0.82rem; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 10px; }
+
+/* ── CONFIG SCREEN ── */
+#config-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; z-index: 200;
+}
+#config-screen h2 { font-family: var(--mono); color: var(--accent); margin-bottom: 6px; text-align: center; }
+#config-screen p { font-size: 0.78rem; color: var(--text2); text-align: center; margin-bottom: 24px; }
+.config-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 20px; width: 100%; max-width: 420px; }
+.config-field { margin-bottom: 16px; }
+.config-field label { font-size: 0.7rem; font-family: var(--mono); color: var(--text2); display: block; margin-bottom: 6px; letter-spacing: 0.04em; }
+.config-input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 10px 14px;
+  font-family: var(--mono); font-size: 0.8rem; color: var(--text); outline: none;
+}
+.config-input:focus { border-color: var(--accent); }
+.config-hint { font-size: 0.65rem; color: var(--text3); margin-top: 4px; line-height: 1.4; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 18px;
+  font-size: 0.78rem; font-family: var(--mono); color: var(--text2);
+  z-index: 300; opacity: 0; transition: opacity 0.3s; white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* ── SAVED LIST ── */
+.saved-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.saved-item-info h4 { font-family: var(--mono); font-size: 0.8rem; color: var(--text); }
+.saved-item-info p { font-size: 0.7rem; color: var(--text2); margin-top: 3px; }
+.saved-item-btns { display: flex; gap: 6px; }
+.btn-sm {
+  padding: 6px 12px; font-size: 0.68rem; font-family: var(--mono);
+  border-radius: var(--r2); border: none; cursor: pointer; transition: all 0.15s;
+}
+.btn-sm-accent { background: var(--accent); color: var(--bg); }
+.btn-sm-warn { background: #3d1a0e; color: #e07050; border: 1px solid #e07050; }
+
+/* ── VALIDATION ERROR ── */
+.verror { font-size: 0.7rem; color: var(--danger); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+
+/* ── PCTS TOTAL ── */
+.pct-total { font-size: 0.72rem; font-family: var(--mono); color: var(--text2); margin-top: 8px; }
+.pct-total.ok { color: var(--accent); }
+.pct-total.err { color: var(--danger); }
+
+/* Responsive */
+@media (min-width: 480px) {
+  .num-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="spinner"></div>
+  <h1>PROYECTO ITUZAINGÓ</h1>
+  <p>Cargando sistema de relevamiento...</p>
+</div>
+
+<!-- CONFIG SCREEN -->
+<div id="config-screen" style="display:none">
+  <h2>Configuración inicial</h2>
+  <p>Ingresá los datos de tu cuenta antes de comenzar</p>
+  <div class="config-card">
+    <div class="config-field">
+      <label>NOMBRE DEL ENCUESTADOR</label>
+      <input class="config-input" id="cfg-nombre" type="text" placeholder="Nombre y apellido">
+    </div>
+    <div class="config-field">
+      <label>URL DEL GOOGLE APPS SCRIPT</label>
+      <input class="config-input" id="cfg-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      <p class="config-hint">Pegá aquí la URL del Web App publicado en Google Apps Script. Ver instrucciones en el documento de configuración.</p>
+    </div>
+    <button class="btn btn-next" style="width:100%; margin-top:4px" onclick="saveConfig()">GUARDAR Y COMENZAR →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-logo">RELEVAMIENTO ASERRADEROS</div>
+      <div class="topbar-sub">Proyecto Ituzaingó</div>
+    </div>
+    <div class="topbar-right">
+      <span class="badge-sync offline" id="sync-badge">● OFFLINE</span>
+      <button class="btn-sm btn-sm-accent" onclick="showSavedList()" style="padding:5px 10px;font-size:0.65rem">GUARDADOS</button>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <div class="nav-tabs" id="nav-tabs"></div>
+  <div class="main" id="main-content"></div>
+  <div class="bottom-nav">
+    <button class="btn btn-prev" id="btn-prev" onclick="prevSection()">← ANTERIOR</button>
+    <button class="btn btn-next" id="btn-next" onclick="nextSection()">SIGUIENTE →</button>
+    <button class="btn btn-submit" id="btn-submit" onclick="submitForm()" style="display:none">ENVIAR FICHA ✓</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════
+let CFG = { nombre: '', url: '' };
+let formData = {};
+let currentSection = 0;
+let isOnline = navigator.onLine;
+
+const SECTIONS = [
+  'DATOS GENERALES',
+  'PRODUCCIÓN',
+  'BLOQUE 1 · ROLLIZOS',
+  'BLOQUE 2 · ASERRADO',
+  'BLOQUE 3 · SUBPRODUCTOS',
+  'BLOQUE 4 · CHIPS',
+  'BLOQUE 5 · DESPACHO',
+  'BLOQUE 6 · ENERGÍA',
+  'BLOQUE 7 · EVALUACIÓN',
+  'GUARDADOS',
+];
+
+// ═══════════════════════════════════════════════════════════
+// FORM SCHEMA — defines every question
+// ═══════════════════════════════════════════════════════════
+const SCHEMA = {
+  0: { // DATOS GENERALES
+    title: 'DATOS GENERALES DEL ESTABLECIMIENTO',
+    desc: 'Identificación del establecimiento y datos del relevamiento',
+    questions: [
+      { id: 'ficha_num', type: 'num', label: 'N° de ficha', unit: '', required: true },
+      { id: 'fecha', type: 'date', label: 'Fecha de visita', required: true },
+      { id: 'hora_inicio', type: 'time', label: 'Hora inicio', required: false },
+      { id: 'hora_cierre', type: 'time', label: 'Hora cierre', required: false },
+      { id: 'razon_social', type: 'text1', label: 'Razón social / Nombre del aserradero', required: true },
+      { id: 'cuit', type: 'text1', label: 'CUIT', required: false },
+      { id: 'forma_juridica', type: 'sel1', label: 'Forma jurídica', required: true,
+        options: ['Persona física','SRL','SA','Cooperativa','Otra'] },
+      { id: 'provincia', type: 'sel1', label: 'Provincia', required: true,
+        options: ['Corrientes','Misiones'] },
+      { id: 'departamento', type: 'text1', label: 'Departamento', required: false },
+      { id: 'localidad', type: 'text1', label: 'Localidad', required: false },
+      { id: 'gps_lat', type: 'num', label: 'GPS — Latitud', unit: '°', required: false, decimal: true },
+      { id: 'gps_lon', type: 'num', label: 'GPS — Longitud', unit: '°', required: false, decimal: true },
+      { id: 'anio_inicio', type: 'num', label: 'Año inicio de operaciones', unit: '', required: false },
+      { id: 'anio_mejoras', type: 'num', label: 'Año últimas mejoras técnicas', unit: '', required: false },
+      { id: 'informante_nombre', type: 'text1', label: 'Nombre del informante', required: true },
+      { id: 'informante_cargo', type: 'text1', label: 'Cargo del informante', required: false },
+      { id: 'informante_tel', type: 'text1', label: 'Tel / WhatsApp', required: false },
+      { id: 'informante_email', type: 'text1', label: 'Correo electrónico', required: false },
+    ]
+  },
+  1: { // PRODUCCIÓN
+    title: 'PRODUCCIÓN ACTUAL',
+    desc: 'Últimos 12 meses — todos los campos son numéricos',
+    questions: [
+      { id: 'p1_rollizos_mes', type: 'num', label: 'P1 · Consumo de rollizos pino', unit: 'm³/mes', required: true },
+      { id: 'p2_capacidad_instalada', type: 'num', label: 'P2 · Capacidad instalada de aserrado', unit: 'm³/mes', required: true },
+      { id: 'p3_produccion_real', type: 'num', label: 'P3 · Producción real madera aserrada', unit: 'm³/mes', required: true },
+      { id: 'p4_uso_capacidad', type: 'calc', label: 'P4 · Uso de capacidad instalada', formula: 'P3 / P2 × 100', unit: '%' },
+      { id: 'p5_turnos', type: 'num', label: 'P5 · Turnos por día', unit: 'turnos', required: false },
+      { id: 'p5_hs_turno', type: 'num', label: 'Horas por turno', unit: 'hs', required: false },
+      { id: 'p5_dias_mes', type: 'num', label: 'Días operados por mes', unit: 'días', required: false },
+      { id: 'p5_meses_anio', type: 'num', label: 'Meses operados por año', unit: 'meses', required: false },
+      { id: 'p6_rendimiento', type: 'num', label: 'P6 · Rendimiento de aserrado', unit: '%', required: false, decimal: true },
+      { id: 'p7_costaneros', type: 'num', label: 'P7 · Costaneros generados', unit: 'm³/mes', required: false },
+      { id: 'p7_aserrin', type: 'num', label: 'Aserrín / viruta generado', unit: 'm³/mes', required: false },
+      { id: 'p7_despuntes', type: 'num', label: 'Despuntes generados', unit: 'm³/mes', required: false },
+      { id: 'p7_corteza', type: 'num', label: 'Corteza generada', unit: 'm³/mes', required: false },
+      { id: 'p8_operarios', type: 'num', label: 'P8 · Personal operativo', unit: 'personas', required: false },
+      { id: 'p8_admin', type: 'num', label: 'Personal administrativo', unit: 'personas', required: false },
+    ]
+  },
+  2: { // BLOQUE 1
+    title: 'BLOQUE 1 · RECEPCIÓN Y ACOPIO DE ROLLIZOS',
+    desc: 'Origen, materia prima, contratos y playa de acopio',
+    questions: [
+      { id: 'b1q1_origen', type: 'sel1', label: '1. Origen del rollizo de pino', required: true,
+        options: ['Bosque propio exclusivamente','Compra a terceros exclusivamente','Mixto (bosque propio + compra)'] },
+      { id: 'b1q2_radio', type: 'sel1', label: '2. Radio de abastecimiento predominante', required: true,
+        options: ['< 50 km','50–100 km','101–200 km','> 200 km'] },
+      { id: 'b1q2_texto', type: 'textnote', label: 'Proveedores principales (referencia)' },
+      { id: 'b1q3_especies', type: 'selm', label: '3. Especies procesadas', required: true,
+        options: ['Pinus taeda','Pinus elliottii','Pino híbrido','Eucalyptus grandis','Otra'] },
+      { id: 'b1q3_pct_taeda', type: 'num', label: '% Pinus taeda', unit: '%', pctGroup: 'especies', decimal: true },
+      { id: 'b1q3_pct_elliottii', type: 'num', label: '% Pinus elliottii', unit: '%', pctGroup: 'especies', decimal: true },
+      { id: 'b1q3_pct_eucalipto', type: 'num', label: '% Eucalipto', unit: '%', pctGroup: 'especies', decimal: true },
+      { id: 'b1q3_pct_otra', type: 'num', label: '% Otra', unit: '%', pctGroup: 'especies', decimal: true },
+      { id: 'b1q4_diam_min', type: 'num', label: '4. Diámetro mínimo (punta fina s/corteza)', unit: 'cm' },
+      { id: 'b1q4_diam_max', type: 'num', label: 'Diámetro máximo', unit: 'cm' },
+      { id: 'b1q4_diam_pred', type: 'num', label: 'Diámetro predominante', unit: 'cm' },
+      { id: 'b1q5_largo', type: 'sel1', label: '5. Largo predominante de rollizos', required: true,
+        options: ['2,44 m','3,05 m','4,10 m','6,00 m','Variable (sin estándar)'] },
+      { id: 'b1q6_recepcion', type: 'sel1', label: '6. Equipamiento principal de descarga', required: true,
+        options: ['Cargador frontal','Grúa hidráulica','Pala mecánica','Manual','Otro'] },
+      { id: 'b1q7_contratos', type: 'sel1', label: '7. ¿Tiene contratos vigentes?', required: true,
+        options: ['Sí','No'] },
+      { id: 'b1q8_tipo_contrato', type: 'sel1', label: '8. Tipo de contrato principal', skipIf: {id:'b1q7_contratos', val:'No'},
+        options: ['Anual','Plurianual','Compra spot','Abastecimiento exclusivo','Otro'] },
+      { id: 'b1q8_vol_comprometido', type: 'num', label: 'Volumen comprometido', unit: 'm³/mes', skipIf: {id:'b1q7_contratos', val:'No'} },
+      { id: 'b1q8_vencimiento', type: 'sel1', label: 'Vencimiento del contrato', skipIf: {id:'b1q7_contratos', val:'No'},
+        options: ['< 1 año','1–3 años','> 3 años','Renovación automática'] },
+      { id: 'b1q9_disponible', type: 'sel1', label: '9. Volumen disponible para celulosa', required: true,
+        options: ['Sí, inmediatamente disponible','Sí, con ampliación de producción','Sí, sujeto a renegociación','No disponible actualmente','No definido / no sabe'] },
+      { id: 'b1q9_vol_pot', type: 'num', label: 'Volumen potencial disponible', unit: 'ton/mes chips', decimal: true },
+      { id: 'b1q10_restricciones', type: 'selm', label: '10. Restricciones contractuales identificadas',
+        options: ['Exclusividad de suministro','Cupos comprometidos','Limitaciones logísticas','Variabilidad estacional','Ninguna'] },
+      { id: 'b1q11_sup_playa', type: 'num', label: '11. Superficie playa de rollizos', unit: 'm²' },
+      { id: 'b1q11_cap_playa', type: 'num', label: 'Capacidad estimada', unit: 'm³' },
+      { id: 'b1q11_piso', type: 'sel1', label: 'Tipo de piso de la playa',
+        options: ['Tierra','Ripio','Hormigón','Asfalto','Mixto'] },
+      { id: 'b1q12_almacenaje', type: 'sel1', label: '12. Tiempo de almacenaje del rollizo', required: true,
+        options: ['< 15 días','15–30 días','30–90 días','> 90 días'] },
+      { id: 'b1q13_calidad', type: 'sel1', label: '13. Control de calidad en recepción', required: true,
+        options: ['Sí, sistemático','Sí, ocasional','No'] },
+      { id: 'b1_obs_dir', type: 'obs', label: 'Observación Directa — Bloque 1',
+        items: ['Piso firme y drenaje adecuado en la playa (sin charcos)','Rollizos ordenados por especie / diámetro','Espacio libre para ampliar acopio de rollizos','Se observa contaminación cruzada con corteza o tierra','Cargador / grúa operativo y en buen estado visual','Portón permite ingreso de bitrenes / camiones forestales'] },
+      { id: 'b1_notas', type: 'textarea', label: 'Notas del encuestador — Bloque 1' },
+    ]
+  },
+  3: { // BLOQUE 2
+    title: 'BLOQUE 2 · LÍNEA DE ASERRADO',
+    desc: 'Equipamiento principal, descortezado y detector de metales',
+    questions: [
+      { id: 'b2q14_tipo_sierra', type: 'sel1', label: '14. Tipo de sierra principal', required: true,
+        options: ['Sierra circular simple','Sierra circular múltiple','Sierra sinfín / cinta horizontal','Sierra sinfín / cinta vertical','Carro tipo Wood-Mizer o similar','Otra'] },
+      { id: 'b2q14_potencia', type: 'num', label: 'Potencia sierra principal', unit: 'HP' },
+      { id: 'b2q14_voltaje', type: 'num', label: 'Voltaje', unit: 'V' },
+      { id: 'b2q14_anio', type: 'num', label: 'Año de instalación / fabricación', unit: '' },
+      { id: 'b2q14_marca', type: 'textnote', label: 'Marca y modelo (referencia)' },
+      { id: 'b2q15_reaserrado', type: 'sel1', label: '15. ¿Tiene equipamiento de reaserrado / canteado?', required: true,
+        options: ['Sí','No'] },
+      { id: 'b2q15_pot_reasera', type: 'num', label: 'Potencia total línea de reaserrado', unit: 'HP', skipIf: {id:'b2q15_reaserrado', val:'No'} },
+      { id: 'b2q16_descortezador', type: 'sel1', label: '16. Descortezador de rollizos', required: true,
+        options: ['Sí, de anillo','Sí, de fresa','Sí, otro tipo','No tiene'] },
+      { id: 'b2q16_cap_desc', type: 'num', label: 'Capacidad nominal descortezador', unit: 'm³/h', decimal: true, skipIf: {id:'b2q16_descortezador', val:'No tiene'} },
+      { id: 'b2q17_detector', type: 'sel1', label: '17. Detector de metales', required: true,
+        options: ['Sí, previo al descortezado','Sí, previo a la sierra','No tiene'] },
+      { id: 'b2q18_afilado', type: 'sel1', label: '18. Sistema de afilado y mantenimiento de sierras', required: true,
+        options: ['Taller propio en planta','Servicio externo','Mixto'] },
+      { id: 'b2q19_productos', type: 'selm', label: '19. Productos principales del aserrado',
+        options: ['Tablas verdes','Tablas secas (secadero propio)','Tirante estructural','Pallet / embalaje','Listones / molduras','Remanufactura'] },
+      { id: 'b2_obs_dir', type: 'obs', label: 'Observación Directa — Bloque 2',
+        items: ['Sierra principal operativa al momento de la visita','Protecciones mecánicas y eléctricas completas y en su lugar','Sistema de extracción de aserrín operativo','Espacio físico libre para instalar descortezador adicional','Tablero eléctrico ordenado, identificado y sin riesgos'] },
+      { id: 'b2_notas', type: 'textarea', label: 'Notas del encuestador — Bloque 2' },
+    ]
+  },
+  4: { // BLOQUE 3
+    title: 'BLOQUE 3 · GESTIÓN DE SUBPRODUCTOS',
+    desc: 'Destino de costaneros, aserrín, corteza y logística interna',
+    questions: [
+      { id: 'b3q20_costaneros', type: 'sel1', label: '20. Destino principal de costaneros', required: true,
+        options: ['Se chipean en planta','Se venden enteros a terceros','Se queman a cielo abierto','Se acumulan sin destino definido','Uso interno (caldera / secadero)'] },
+      { id: 'b3q21_aserrin', type: 'sel1', label: '21. Destino principal del aserrín / viruta', required: true,
+        options: ['Venta a terceros (pellets, cama animal, otros)','Caldera propia','Acumulación / descarte sin destino','Otro'] },
+      { id: 'b3q22_corteza', type: 'sel1', label: '22. Manejo de la corteza', required: true,
+        options: ['No descorteza (corteza ingresa al proceso)','Se separa y vende','Se quema in situ','Se acumula sin destino','Caldera propia'] },
+      { id: 'b3q23_transporte', type: 'sel1', label: '23. Transporte interno de subproductos (principal)', required: true,
+        options: ['Cintas transportadoras','Tornillos sinfín','Pala / manual','Volquetes','Pala cargadora','Otro'] },
+      { id: 'b3q24_separacion', type: 'sel1', label: '24. Separación subproductos limpios / con corteza', required: true,
+        options: ['Sí, total','Sí, parcial','No'] },
+      { id: 'b3_obs_dir', type: 'obs', label: 'Observación Directa — Bloque 3',
+        items: ['Costaneros acumulados ordenadamente sin mezcla con corteza','Hay quema de subproductos a cielo abierto al momento de la visita','Aserrín se recoge mecánicamente (no manual desde el piso)','Zona de subproductos bajo techo o protegida de lluvia','Espacio libre para instalar tolvas / silos adicionales'] },
+      { id: 'b3_notas', type: 'textarea', label: 'Notas del encuestador — Bloque 3' },
+    ]
+  },
+  5: { // BLOQUE 4
+    title: 'BLOQUE 4 · ASTILLADO Y CLASIFICACIÓN DE CHIPS',
+    desc: 'Equipamiento, clasificación y acopio de chips',
+    questions: [
+      { id: 'b4q25_tiene_astilladora', type: 'sel1', label: '25. ¿Tiene astilladora instalada?', required: true,
+        options: ['Sí, en operación','Sí, fuera de servicio','No tiene'] },
+      { id: 'b4q26_tipo_astilladora', type: 'sel1', label: '26. Tipo de astilladora',
+        skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'},
+        options: ['Disco','Tambor','Cuchillas helicoidales','Móvil / forestal','Otra'] },
+      { id: 'b4q26_cap_nominal', type: 'num', label: 'Capacidad nominal', unit: 'ton/h', decimal: true, skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q26_potencia', type: 'num', label: 'Potencia', unit: 'HP', skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q26_anio', type: 'num', label: 'Año de instalación', unit: '', skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q26_marca', type: 'textnote', label: 'Marca y modelo (referencia)', skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q27_insumos', type: 'selm', label: '27. Insumos que ingresan a la astilladora',
+        skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'},
+        options: ['Costaneros limpios','Costaneros con corteza','Despuntes','Rollizos enteros pulpables','Mezcla sin separar'] },
+      { id: 'b4q28_produccion', type: 'num', label: '28. Producción actual de chips', unit: 'ton/mes', skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q28_densidad', type: 'num', label: 'Densidad apilada estimada', unit: 'kg/m³', skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q28_destino', type: 'textnote', label: 'Destino actual de los chips (cliente / uso)', skipIf: {id:'b4q25_tiene_astilladora', val:'No tiene'} },
+      { id: 'b4q29_zaranda', type: 'sel1', label: '29. Sistema de clasificación de chips', required: true,
+        options: ['Zaranda oscilante','Zaranda rotativa / disco','Otro tipo','No tiene'] },
+      { id: 'b4q30_calidad_chips', type: 'selm', label: '30. Control de calidad de chips producidos',
+        options: ['Granulometría','Humedad','Contenido de corteza','Densidad apilada','No se controla'] },
+      { id: 'b4q31_acopio', type: 'sel1', label: '31. Forma de acopio de chips (principal)', required: true,
+        options: ['Pila a cielo abierto','Pila bajo techo','Silo metálico','Tolva','Bins / contenedores','No acopia'] },
+      { id: 'b4q31_cap_acopio', type: 'num', label: 'Capacidad actual de acopio', unit: 'ton', decimal: true },
+      { id: 'b4q31_sup_actual', type: 'num', label: 'Superficie actual de acopio', unit: 'm²' },
+      { id: 'b4q31_sup_ampliable', type: 'num', label: 'Superficie ampliable disponible', unit: 'm²' },
+      { id: 'b4_obs_dir', type: 'obs', label: 'Observación Directa — Bloque 4',
+        items: ['Astilladora operativa al momento de la visita','Chips visualmente limpios, sin corteza ni contaminantes','Zaranda o clasificador de chips en línea','Acopio de chips sobre superficie firme y protegido de lluvia','Acceso de camiones volcador / piso móvil al punto de carga viable','Espacio físico para instalar línea de astillado nueva o ampliada'] },
+      { id: 'b4_notas', type: 'textarea', label: 'Notas del encuestador — Bloque 4' },
+    ]
+  },
+  6: { // BLOQUE 5
+    title: 'BLOQUE 5 · DESPACHO Y LOGÍSTICA DE SALIDA',
+    desc: 'Camiones, báscula, tiempos y acceso a ruta',
+    questions: [
+      { id: 'b5q32_camion', type: 'sel1', label: '32. Tipo de camión principal para despacho', required: true,
+        options: ['Chasis simple','Semirremolque','Bitren','Piso móvil','Volcador'] },
+      { id: 'b5q33_carga', type: 'sel1', label: '33. Sistema de carga del camión (principal)', required: true,
+        options: ['Cargador frontal','Grúa','Cinta transportadora elevada','Tolva por gravedad','Manual'] },
+      { id: 'b5q34_bascula', type: 'sel1', label: '34. ¿Cuenta con báscula para camiones?', required: true,
+        options: ['Sí, propia','Sí, de uso compartido (cercana)','No'] },
+      { id: 'b5q34_cap_bascula', type: 'num', label: 'Capacidad de la báscula', unit: 'ton', skipIf: {id:'b5q34_bascula', val:'No'} },
+      { id: 'b5q35_tiempo_carga', type: 'num', label: '35. Tiempo promedio de carga', unit: 'min/camión' },
+      { id: 'b5q35_camiones_dia', type: 'num', label: 'Máximo de camiones por día', unit: 'camiones/día' },
+      { id: 'b5q36_acceso', type: 'sel1', label: '36. Tipo de acceso al establecimiento', required: true,
+        options: ['Asfalto hasta la planta','Ripio consolidado, transitable todo el año','Tierra / mejorado, con dificultad en lluvia','Tierra sin mejorar, intransitable en lluvia'] },
+      { id: 'b5q36_dist_ruta', type: 'num', label: 'Distancia al asfalto / ruta principal', unit: 'km', decimal: true },
+      { id: 'b5_obs_dir', type: 'obs', label: 'Observación Directa — Bloque 5',
+        items: ['Camino interno permite ingreso/egreso de bitrenes cargados','Zona de espera / maniobra para al menos 2 camiones simultáneos','Sistema de carga permite granel sin pala manual','Báscula operativa con calibración vigente visible','Acceso a ruta transitable en cualquier época del año'] },
+      { id: 'b5_notas', type: 'textarea', label: 'Notas del encuestador — Bloque 5' },
+    ]
+  },
+  7: { // BLOQUE 6
+    title: 'BLOQUE 6 · ENERGÍA Y SERVICIOS AUXILIARES',
+    desc: 'Electricidad, servicios, certificaciones y habilitaciones',
+    questions: [
+      { id: 'b6q37_suministro', type: 'sel1', label: '37. Tipo de suministro eléctrico', required: true,
+        options: ['Red de media tensión (MT)','Red de baja tensión (BT)','Generación propia / grupo electrógeno','Híbrido red + generador'] },
+      { id: 'b6q38_pot_contratada', type: 'num', label: '38. Potencia contratada / instalada', unit: 'kVA' },
+      { id: 'b6q38_pico', type: 'num', label: 'Pico máximo de consumo registrado', unit: 'kW' },
+      { id: 'b6q38_trafo', type: 'num', label: 'Capacidad del transformador propio', unit: 'kVA' },
+      { id: 'b6q39_margen', type: 'sel1', label: '39. Margen eléctrico para nuevo equipamiento', required: true,
+        options: ['> 30% de margen libre','10–30% de margen','Marginal (< 10%)','Al límite / sin margen','No sabe'] },
+      { id: 'b6q40_estabilidad', type: 'sel1', label: '40. Estabilidad del suministro eléctrico', required: true,
+        options: ['Estable, sin cortes frecuentes','Cortes ocasionales (frecuencia mensual)','Cortes frecuentes (frecuencia semanal o mayor)','Inestable, requiere generador habitual'] },
+      { id: 'b6q41_agua', type: 'sel1', label: '41. Provisión de agua', required: true,
+        options: ['Red pública','Pozo propio','No tiene'] },
+      { id: 'b6q42_termico', type: 'selm', label: '42. Equipamiento térmico propio',
+        options: ['Caldera de biomasa','Secadero de madera propio','Secadero de terceros','No tiene'] },
+      { id: 'b6q43_conectividad', type: 'sel1', label: '43. Conectividad para control / trazabilidad', required: true,
+        options: ['Internet fibra','Internet 4G/5G','Internet satelital','Sin conexión'] },
+      { id: 'b6q44_certificaciones', type: 'selm', label: '44. Certificaciones vigentes',
+        options: ['FSC','FSC CoC','PEFC/CERFOAR','PEFC/CERFOAR CoC','ISO 9001','ISO 14001','ISO 45001','Ninguna','Otra'] },
+      { id: 'b6q45_habilitaciones', type: 'selm', label: '45. Habilitaciones ambientales y permisos',
+        options: ['Habilitación ambiental vigente','Estudio de impacto ambiental','Permiso de emisiones','Gestión registrada de residuos','No informado'] },
+      { id: 'b6q46_trazabilidad', type: 'sel1', label: '46. Sistema de trazabilidad de materia prima', required: true,
+        options: ['Sí, digital','Sí, manual','Parcial','No posee'] },
+      { id: 'b6q47_seguridad', type: 'selm', label: '47. Situación laboral y de seguridad industrial',
+        options: ['ART vigente','Programa de higiene y seguridad','EPP observados en uso','Señalización industrial','No verificado'] },
+      { id: 'b6q48_restricciones_reg', type: 'sel1', label: '48. ¿Restricciones regulatorias para ampliaciones?', required: true,
+        options: ['Sí','No','En evaluación'] },
+      { id: 'b6q48_detalle', type: 'textnote', label: 'Detalle de la restricción (si aplica)', skipIf: {id:'b6q48_restricciones_reg', val:'No'} },
+      { id: 'b6_obs_dir', type: 'obs', label: 'Observación Directa — Bloque 6',
+        items: ['Tablero principal con protecciones diferenciales/termomagnéticas en buen estado','Sin tendidos eléctricos provisorios ni cables en piso húmedo','Espacio físico cerca del tablero para ampliar potencia instalada','Transformador propio con cerco perimetral y cartel de seguridad'] },
+      { id: 'b6_notas', type: 'textarea', label: 'Notas del encuestador — Bloque 6' },
+    ]
+  },
+  8: { // BLOQUE 7
+    title: 'BLOQUE 7 · BRECHA TÉCNICA Y EVALUACIÓN FINAL',
+    desc: 'Espacio físico, limitantes e índice de aptitud para celulosa',
+    questions: [
+      { id: 'b7q49_sup_total', type: 'num', label: '49. Superficie total del predio', unit: 'm²' },
+      { id: 'b7q49_sup_cubierta', type: 'num', label: 'Superficie cubierta actual', unit: 'm²' },
+      { id: 'b7q49_sup_libre', type: 'num', label: 'Superficie libre para ampliación', unit: 'm²' },
+      { id: 'b7q49_largo_libre', type: 'num', label: 'Mayor espacio contiguo libre — Largo', unit: 'm' },
+      { id: 'b7q49_ancho_libre', type: 'num', label: 'Ancho', unit: 'm' },
+      { id: 'b7q49_alto_libre', type: 'num', label: 'Altura libre (si bajo techo)', unit: 'm' },
+      { id: 'b7q50_esp_descortezador', type: 'sel1', label: '50. Aptitud para descortezador adicional', required: true,
+        options: ['Sí, en línea con sierra actual','Sí, en zona de recepción de rollizos','Sí, en otro sector','No hay espacio adecuado'] },
+      { id: 'b7q51_esp_astilladora', type: 'sel1', label: '51. Aptitud para ampliar línea de astillado', required: true,
+        options: ['Espacio disponible sin intervención','Sí, reubicando equipos existentes','Sí, con obra civil menor','Sí, con obra civil mayor','No hay espacio adecuado'] },
+      { id: 'b7q52_playa_chips', type: 'sel1', label: '52. Playa de chips ampliable', required: true,
+        options: ['> 2.000 m² disponibles','500–2.000 m²','< 500 m²','No hay espacio'] },
+      { id: 'b7q53_restricciones_fis', type: 'selm', label: '53. Restricciones físicas para nueva inversión',
+        options: ['Curso de agua / cañada','Línea eléctrica de alta tensión','Vecinos linderos próximos','Pendiente del terreno','Ninguna relevante'] },
+      { id: 'b7q54_planes', type: 'sel1', label: '54. Estado de los planes de ampliación productiva', required: true,
+        options: ['En ejecución actualmente','Evaluados técnicamente, no iniciados','Previstos a mediano plazo (> 1 año)','No hay planes actualmente','No informado'] },
+      { id: 'b7q55_tipo_ampliacion', type: 'selm', label: '55. Tipos de ampliación previstos o de interés',
+        options: ['Nueva línea de aserrado','Ampliación de astilladora','Descortezado','Secadero','Cogeneración / biomasa','Playa de acopio','Automatización','Clasificación de chips','Otra'] },
+      { id: 'b7q56_limitantes', type: 'selm', label: '56. Principales limitantes para ampliar producción',
+        options: ['Energía eléctrica','Disponibilidad de madera','Financiamiento','Espacio físico','Recursos humanos','Infraestructura vial','Permisos ambientales','Mercado / demanda','Ninguna limitante relevante'] },
+      { id: 'b7q57_max_madera', type: 'num', label: '57. Producción máxima técnica potencial — Madera aserrada', unit: 'm³/mes' },
+      { id: 'b7q57_max_chips', type: 'num', label: 'Chips máximos potenciales', unit: 'ton/mes' },
+      { id: 'b7q57_horizonte', type: 'sel1', label: 'Horizonte para alcanzar ese máximo',
+        options: ['< 1 año','1–3 años','> 3 años'] },
+      // BRECHA TÉCNICA
+      { id: 'brecha_intro', type: 'sectionlabel', label: 'TABLA DE BRECHA TÉCNICA', desc: 'Evaluación del encuestador — Selección única por componente. Escala 0–3. Score total automático.' },
+      { id: 'bt_playa_rollizos', type: 'ord3', label: 'Recepción y playa de rollizos', required: true },
+      { id: 'bt_descortezado', type: 'ord3', label: 'Descortezado de rollizos', required: true },
+      { id: 'bt_linea_aserrado', type: 'ord3', label: 'Línea de aserrado principal', required: true },
+      { id: 'bt_subproductos', type: 'ord3', label: 'Manejo y separación de subproductos limpios', required: true },
+      { id: 'bt_astillado', type: 'ord3', label: 'Capacidad de astillado', required: true },
+      { id: 'bt_clasificacion', type: 'ord3', label: 'Clasificación y zarandeo de chips', required: true },
+      { id: 'bt_acopio_chips', type: 'ord3', label: 'Acopio diferenciado de chips limpios', required: true },
+      { id: 'bt_despacho', type: 'ord3', label: 'Despacho a granel (carga camionera)', required: true },
+      { id: 'bt_energia', type: 'ord3', label: 'Capacidad y estabilidad eléctrica', required: true },
+      { id: 'bt_acceso', type: 'ord3', label: 'Caminos internos y acceso a ruta', required: true },
+      { id: 'bt_espacio', type: 'ord3', label: 'Espacio físico para ampliación', required: true },
+      { id: 'bt_score_total', type: 'calc', label: 'SCORE TOTAL DE APTITUD', formula: 'Suma de los 11 componentes', unit: '/ 33' },
+      // EVALUACIÓN FINAL
+      { id: 'b7q58_nivel_tec', type: 'ord5', label: '58. Nivel tecnológico general', required: true },
+      { id: 'b7q59_aptitud_final', type: 'ord3b', label: '59. Aptitud para suministro de chips a celulosa', required: true },
+      { id: 'b7q60_interes', type: 'ord3c', label: '60. Interés del informante en participar', required: true },
+      { id: 'b7q61_vol_potencial', type: 'num', label: '61. Volumen potencial de chips estimado', unit: 'ton/mes', decimal: true },
+      { id: 'b7q61_plazo', type: 'num', label: 'Plazo para alcanzar ese volumen', unit: 'meses' },
+      { id: 'b7_notas', type: 'textarea', label: 'Observaciones generales finales del encuestador' },
+    ]
+  },
+};
+
+const ORD3_OPTS = [
+  { val: 3, label: '3 — Apto' },
+  { val: 2, label: '2 — Apto con mejoras menores' },
+  { val: 1, label: '1 — Requiere inversión mayor' },
+  { val: 0, label: '0 — No apto' },
+];
+const ORD3B_OPTS = [
+  { val: 3, label: '3 — Apto sin inversiones (suministro inmediato)' },
+  { val: 2, label: '2 — Apto con inversiones menores (< 1 año)' },
+  { val: 1, label: '1 — Apto con inversiones mayores (1–3 años)' },
+  { val: 0, label: '0 — No apto en plazo razonable' },
+];
+const ORD3C_OPTS = [
+  { val: 3, label: '3 — Alto' },
+  { val: 2, label: '2 — Medio' },
+  { val: 1, label: '1 — Bajo' },
+  { val: 0, label: '0 — Nulo / no opinó' },
+];
+const ORD5_OPTS = [
+  { val: 5, label: '5 — Muy alto' },
+  { val: 4, label: '4 — Alto' },
+  { val: 3, label: '3 — Medio' },
+  { val: 2, label: '2 — Bajo' },
+  { val: 1, label: '1 — Muy bajo / artesanal' },
+];
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const cfg = localStorage.getItem('aserradores_cfg');
+    if (cfg) {
+      CFG = JSON.parse(cfg);
+      document.getElementById('splash').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('splash').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        initApp();
+      }, 400);
+    } else {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('config-screen').style.display = 'flex';
+    }
+  }, 800);
+});
+
+window.addEventListener('online', () => { isOnline = true; updateSyncBadge(); });
+window.addEventListener('offline', () => { isOnline = false; updateSyncBadge(); });
+
+function updateSyncBadge() {
+  const b = document.getElementById('sync-badge');
+  b.textContent = isOnline ? '● ONLINE' : '● OFFLINE';
+  b.className = 'badge-sync ' + (isOnline ? 'online' : 'offline');
+}
+
+function saveConfig() {
+  const nombre = document.getElementById('cfg-nombre').value.trim();
+  const url = document.getElementById('cfg-url').value.trim();
+  if (!nombre) { alert('Ingresá tu nombre'); return; }
+  CFG = { nombre, url };
+  localStorage.setItem('aserradores_cfg', JSON.stringify(CFG));
+  document.getElementById('config-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  initApp();
+}
+
+function initApp() {
+  updateSyncBadge();
+  buildNavTabs();
+  renderSection(0);
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════
+function buildNavTabs() {
+  const container = document.getElementById('nav-tabs');
+  container.innerHTML = '';
+  SECTIONS.forEach((s, i) => {
+    const t = document.createElement('div');
+    t.className = 'nav-tab' + (i === currentSection ? ' active' : '');
+    t.textContent = i === 9 ? '📋 GUARDADOS' : `${i === 0 ? '◎' : i}  ${s}`;
+    t.onclick = () => { currentSection = i; buildNavTabs(); renderSection(i); };
+    container.appendChild(t);
+  });
+  // scroll active into view
+  const active = container.querySelector('.active');
+  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function prevSection() {
+  if (currentSection > 0) { currentSection--; buildNavTabs(); renderSection(currentSection); scrollTop(); }
+}
+function nextSection() {
+  if (!validateSection()) return;
+  if (currentSection < SECTIONS.length - 1) { currentSection++; buildNavTabs(); renderSection(currentSection); scrollTop(); }
+}
+function scrollTop() { document.querySelector('.main').scrollTo(0, 0); window.scrollTo(0, 0); }
+
+function updateBottomNav() {
+  document.getElementById('btn-prev').disabled = currentSection === 0;
+  const isLast = currentSection === SECTIONS.length - 2; // last form section (before saved)
+  document.getElementById('btn-next').style.display = (currentSection >= SECTIONS.length - 2) ? 'none' : 'flex';
+  document.getElementById('btn-submit').style.display = isLast ? 'flex' : 'none';
+  // progress
+  const pct = ((currentSection) / (SECTIONS.length - 2)) * 100;
+  document.getElementById('progress-fill').style.width = Math.min(pct, 100) + '%';
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+function renderSection(idx) {
+  updateBottomNav();
+  const main = document.getElementById('main-content');
+
+  if (idx === 9) { renderSavedList(main); return; }
+
+  const sec = SCHEMA[idx];
+  if (!sec) { main.innerHTML = '<p style="color:var(--text2);margin-top:20px">Sección no disponible</p>'; return; }
+
+  let html = `<div class="section-hdr"><h2>${sec.title}</h2><p>${sec.desc}</p></div>`;
+  main.innerHTML = html;
+
+  sec.questions.forEach(q => {
+    const el = renderQuestion(q);
+    if (el) main.appendChild(el);
+  });
+}
+
+function shouldSkip(q) {
+  if (!q.skipIf) return false;
+  return formData[q.skipIf.id] === q.skipIf.val;
+}
+
+function renderQuestion(q) {
+  if (shouldSkip(q)) return null;
+
+  if (q.type === 'sectionlabel') {
+    const d = document.createElement('div');
+    d.className = 'sdiv';
+    d.innerHTML = `<span>${q.label}</span>`;
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:0.72rem;color:var(--text2);margin:4px 0 12px;font-style:italic';
+    p.textContent = q.desc || '';
+    const wrap = document.createElement('div');
+    wrap.appendChild(d);
+    wrap.appendChild(p);
+    return wrap;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'qcard';
+  card.id = 'card-' + q.id;
+
+  const label = document.createElement('div');
+  label.className = 'qlabel';
+  const qtext = document.createElement('div');
+  qtext.className = 'qtext';
+  qtext.innerHTML = q.label + (q.required ? '<span class="qreq">*</span>' : '');
+  if (q.nota) {
+    const nota = document.createElement('div');
+    nota.className = 'qnota';
+    nota.textContent = q.nota;
+    qtext.appendChild(nota);
+  }
+  label.appendChild(qtext);
+  card.appendChild(label);
+
+  const body = document.createElement('div');
+
+  switch (q.type) {
+    case 'sel1':   body.appendChild(renderSel1(q)); break;
+    case 'selm':   body.appendChild(renderSelm(q)); break;
+    case 'num':    body.appendChild(renderNum(q)); break;
+    case 'date':   body.appendChild(renderDate(q)); break;
+    case 'time':   body.appendChild(renderTime(q)); break;
+    case 'text1':  body.appendChild(renderText1(q)); break;
+    case 'textnote': body.appendChild(renderTextNote(q)); break;
+    case 'textarea': body.appendChild(renderTextarea(q)); break;
+    case 'calc':   body.appendChild(renderCalc(q)); break;
+    case 'obs':    card.remove(); return renderObs(q);
+    case 'ord3':   body.appendChild(renderOrd(q, ORD3_OPTS)); break;
+    case 'ord3b':  body.appendChild(renderOrd(q, ORD3B_OPTS)); break;
+    case 'ord3c':  body.appendChild(renderOrd(q, ORD3C_OPTS)); break;
+    case 'ord5':   body.appendChild(renderOrd(q, ORD5_OPTS)); break;
+    default: break;
+  }
+
+  card.appendChild(body);
+  return card;
+}
+
+function renderSel1(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'options';
+  q.options.forEach(opt => {
+    const item = document.createElement('div');
+    item.className = 'opt-item' + (formData[q.id] === opt ? ' selected' : '');
+    item.innerHTML = `<div class="opt-circle"></div><span class="opt-label">${opt}</span>`;
+    item.onclick = () => {
+      formData[q.id] = opt;
+      wrap.querySelectorAll('.opt-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      clearError(q.id);
+      // re-render section to show/hide skipIf fields
+      const sec = SCHEMA[currentSection];
+      if (sec.questions.some(qq => qq.skipIf && qq.skipIf.id === q.id)) {
+        renderSection(currentSection);
+      }
+      // recalc score if brecha
+      recalcScores();
+    };
+    wrap.appendChild(item);
+  });
+  return wrap;
+}
+
+function renderSelm(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'options';
+  if (!formData[q.id]) formData[q.id] = [];
+  q.options.forEach(opt => {
+    const item = document.createElement('div');
+    const sel = Array.isArray(formData[q.id]) && formData[q.id].includes(opt);
+    item.className = 'opt-item' + (sel ? ' selected' : '');
+    item.innerHTML = `<div class="opt-square"></div><span class="opt-label">${opt}</span>`;
+    item.onclick = () => {
+      if (!Array.isArray(formData[q.id])) formData[q.id] = [];
+      const idx = formData[q.id].indexOf(opt);
+      if (idx > -1) { formData[q.id].splice(idx, 1); item.classList.remove('selected'); }
+      else { formData[q.id].push(opt); item.classList.add('selected'); }
+    };
+    wrap.appendChild(item);
+  });
+  return wrap;
+}
+
+function renderNum(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'num-group';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'num-input';
+  input.placeholder = '—';
+  input.inputMode = q.decimal ? 'decimal' : 'numeric';
+  if (formData[q.id] !== undefined) input.value = formData[q.id];
+  input.oninput = () => {
+    formData[q.id] = q.decimal ? parseFloat(input.value) : parseInt(input.value);
+    if (q.pctGroup) updatePctTotal(q.pctGroup);
+    recalcScores();
+    clearError(q.id);
+  };
+  wrap.appendChild(input);
+  if (q.unit) {
+    const u = document.createElement('span');
+    u.className = 'num-unit';
+    u.textContent = q.unit;
+    wrap.appendChild(u);
+  }
+  // pct total indicator
+  if (q.pctGroup) {
+    const totEl = document.createElement('div');
+    totEl.className = 'pct-total';
+    totEl.id = 'pct-' + q.pctGroup;
+    wrap.after ? null : null;
+    const outer = document.createElement('div');
+    outer.appendChild(wrap);
+    outer.appendChild(totEl);
+    setTimeout(() => updatePctTotal(q.pctGroup), 0);
+    return outer;
+  }
+  return wrap;
+}
+
+function updatePctTotal(group) {
+  const el = document.getElementById('pct-' + group);
+  if (!el) return;
+  const fields = ['b1q3_pct_taeda','b1q3_pct_elliottii','b1q3_pct_eucalipto','b1q3_pct_otra'];
+  const total = fields.reduce((s, k) => s + (parseFloat(formData[k]) || 0), 0);
+  el.textContent = `Total: ${total.toFixed(1)}%`;
+  el.className = 'pct-total ' + (Math.abs(total - 100) < 0.5 ? 'ok' : total > 0 ? 'err' : '');
+}
+
+function renderDate(q) {
+  const input = document.createElement('input');
+  input.type = 'date';
+  input.className = 'num-input';
+  if (formData[q.id]) input.value = formData[q.id];
+  else input.value = new Date().toISOString().split('T')[0];
+  formData[q.id] = input.value;
+  input.oninput = () => { formData[q.id] = input.value; clearError(q.id); };
+  return input;
+}
+
+function renderTime(q) {
+  const input = document.createElement('input');
+  input.type = 'time';
+  input.className = 'num-input';
+  if (formData[q.id]) input.value = formData[q.id];
+  input.oninput = () => { formData[q.id] = input.value; };
+  return input;
+}
+
+function renderText1(q) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'num-input';
+  input.placeholder = '—';
+  if (formData[q.id]) input.value = formData[q.id];
+  input.oninput = () => { formData[q.id] = input.value; clearError(q.id); };
+  return input;
+}
+
+function renderTextNote(q) {
+  const wrap = document.createElement('div');
+  const input = document.createElement('textarea');
+  input.className = 'text-input';
+  input.rows = 2;
+  input.placeholder = 'Texto de referencia (no analizable)';
+  if (formData[q.id]) input.value = formData[q.id];
+  input.oninput = () => { formData[q.id] = input.value; };
+  const hint = document.createElement('div');
+  hint.className = 'text-hint';
+  hint.textContent = 'Campo de referencia — no se usa en el análisis comparativo';
+  wrap.appendChild(input);
+  wrap.appendChild(hint);
+  return wrap;
+}
+
+function renderTextarea(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'notes-box';
+  const lbl = document.createElement('label');
+  lbl.textContent = '📝 ' + q.label;
+  const ta = document.createElement('textarea');
+  ta.className = 'text-input';
+  ta.rows = 3;
+  ta.placeholder = 'Observaciones del encuestador...';
+  if (formData[q.id]) ta.value = formData[q.id];
+  ta.oninput = () => { formData[q.id] = ta.value; };
+  wrap.appendChild(lbl);
+  wrap.appendChild(ta);
+  return wrap;
+}
+
+function renderCalc(q) {
+  const wrap = document.createElement('div');
+  const disp = document.createElement('div');
+  disp.className = 'calc-display';
+  disp.id = 'calc-' + q.id;
+  const val = getCalcValue(q);
+  disp.innerHTML = `<span>${q.label}</span><span class="calc-val">${val !== null ? val : '—'} <small>${q.unit || ''}</small></span>`;
+  const f = document.createElement('div');
+  f.className = 'calc-formula';
+  f.textContent = '⟳ ' + q.formula;
+  wrap.appendChild(disp);
+  wrap.appendChild(f);
+  return wrap;
+}
+
+function getCalcValue(q) {
+  if (q.id === 'p4_uso_capacidad') {
+    const p2 = parseFloat(formData['p2_capacidad_instalada']);
+    const p3 = parseFloat(formData['p3_produccion_real']);
+    if (p2 && p3) { const v = (p3/p2*100).toFixed(1); formData[q.id] = v; return v; }
+  }
+  if (q.id === 'bt_score_total') {
+    const bts = ['bt_playa_rollizos','bt_descortezado','bt_linea_aserrado','bt_subproductos','bt_astillado','bt_clasificacion','bt_acopio_chips','bt_despacho','bt_energia','bt_acceso','bt_espacio'];
+    const vals = bts.map(k => parseInt(formData[k]));
+    if (vals.some(isNaN)) return null;
+    const total = vals.reduce((a,b) => a+b, 0);
+    formData[q.id] = total;
+    return `${total} / 33`;
+  }
+  return null;
+}
+
+function recalcScores() {
+  // update calc displays if visible
+  ['p4_uso_capacidad','bt_score_total'].forEach(id => {
+    const el = document.getElementById('calc-' + id);
+    if (!el) return;
+    const q = findQuestion(id);
+    if (!q) return;
+    const val = getCalcValue(q);
+    const valEl = el.querySelector('.calc-val');
+    if (valEl) valEl.innerHTML = `${val !== null ? val : '—'} <small>${q.unit || ''}</small>`;
+  });
+}
+
+function findQuestion(id) {
+  for (const sec of Object.values(SCHEMA)) {
+    const q = sec.questions.find(q => q.id === id);
+    if (q) return q;
+  }
+  return null;
+}
+
+function renderObs(q) {
+  const block = document.createElement('div');
+  block.className = 'obs-block';
+  block.id = 'card-' + q.id;
+  const h = document.createElement('h4');
+  h.textContent = '⚡ ' + q.label.toUpperCase();
+  block.appendChild(h);
+  if (!formData[q.id]) formData[q.id] = {};
+  q.items.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'obs-item';
+    const lbl = document.createElement('span');
+    lbl.className = 'obs-label';
+    lbl.textContent = item;
+    const btns = document.createElement('div');
+    btns.className = 'obs-btns';
+    ['Sí','No','N/A'].forEach(v => {
+      const b = document.createElement('button');
+      b.className = 'obs-btn' + (formData[q.id][i] === v ? ` active-${v.toLowerCase().replace('/','').replace(' ','')}` : '');
+      if (v === 'Sí') b.className = 'obs-btn' + (formData[q.id][i] === 'Sí' ? ' active-si' : '');
+      if (v === 'No') b.className = 'obs-btn' + (formData[q.id][i] === 'No' ? ' active-no' : '');
+      if (v === 'N/A') b.className = 'obs-btn' + (formData[q.id][i] === 'N/A' ? ' active-na' : '');
+      b.textContent = v;
+      b.onclick = () => {
+        formData[q.id][i] = v;
+        btns.querySelectorAll('.obs-btn').forEach(bb => bb.className = 'obs-btn');
+        if (v === 'Sí') b.className = 'obs-btn active-si';
+        if (v === 'No') b.className = 'obs-btn active-no';
+        if (v === 'N/A') b.className = 'obs-btn active-na';
+      };
+      btns.appendChild(b);
+    });
+    row.appendChild(lbl);
+    row.appendChild(btns);
+    block.appendChild(row);
+  });
+  return block;
+}
+
+function renderOrd(q, opts) {
+  const wrap = document.createElement('div');
+  wrap.className = 'options';
+  opts.forEach(opt => {
+    const item = document.createElement('div');
+    const curVal = formData[q.id];
+    item.className = 'opt-item' + (curVal === opt.val || curVal === String(opt.val) ? ' selected' : '');
+    item.innerHTML = `<div class="opt-circle"></div><span class="opt-label">${opt.label}</span>`;
+    item.onclick = () => {
+      formData[q.id] = opt.val;
+      wrap.querySelectorAll('.opt-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      clearError(q.id);
+      recalcScores();
+    };
+    wrap.appendChild(item);
+  });
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════════════
+function validateSection() {
+  const sec = SCHEMA[currentSection];
+  if (!sec) return true;
+  let valid = true;
+  sec.questions.forEach(q => {
+    if (!q.required || shouldSkip(q)) return;
+    const val = formData[q.id];
+    if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
+      showError(q.id, 'Campo requerido');
+      valid = false;
+    }
+  });
+  if (!valid) { showToast('Completá los campos obligatorios (*)'); }
+  return valid;
+}
+
+function showError(id, msg) {
+  const card = document.getElementById('card-' + id);
+  if (!card) return;
+  card.classList.add('error');
+  let e = card.querySelector('.verror');
+  if (!e) { e = document.createElement('div'); e.className = 'verror'; card.appendChild(e); }
+  e.innerHTML = `⚠ ${msg}`;
+}
+
+function clearError(id) {
+  const card = document.getElementById('card-' + id);
+  if (!card) return;
+  card.classList.remove('error');
+  const e = card.querySelector('.verror');
+  if (e) e.remove();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAVED LIST
+// ═══════════════════════════════════════════════════════════
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem('aserradores_saved') || '[]'); } catch { return []; }
+}
+function setSaved(list) { localStorage.setItem('aserradores_saved', JSON.stringify(list)); }
+
+function saveLocal() {
+  const list = getSaved();
+  const id = Date.now();
+  const nombre_est = formData['razon_social'] || 'Sin nombre';
+  const fecha = formData['fecha'] || '—';
+  list.push({ id, nombre_est, fecha, encuestador: CFG.nombre, data: { ...formData } });
+  setSaved(list);
+  showToast('Guardado localmente ✓');
+}
+
+function renderSavedList(main) {
+  const list = getSaved();
+  let html = `<div class="section-hdr"><h2>FICHAS GUARDADAS</h2><p>${list.length} ficha(s) en este dispositivo</p></div>`;
+
+  if (list.length === 0) {
+    html += `<p style="color:var(--text2);font-size:0.85rem;margin-top:16px">No hay fichas guardadas aún.</p>`;
+    main.innerHTML = html;
+    return;
+  }
+
+  main.innerHTML = html;
+  list.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'saved-item';
+    div.innerHTML = `
+      <div class="saved-item-info">
+        <h4>${item.nombre_est}</h4>
+        <p>📅 ${item.fecha}  |  👤 ${item.encuestador}</p>
+      </div>
+      <div class="saved-item-btns">
+        <button class="btn-sm btn-sm-accent" onclick="syncItem(${idx})">SINCRONIZAR</button>
+        <button class="btn-sm btn-sm-warn" onclick="deleteItem(${idx})">✕</button>
+      </div>`;
+    main.appendChild(div);
+  });
+
+  // sync all button
+  const syncAllBtn = document.createElement('button');
+  syncAllBtn.className = 'btn btn-next';
+  syncAllBtn.style.cssText = 'width:100%;margin-top:16px';
+  syncAllBtn.textContent = '↑ SINCRONIZAR TODAS';
+  syncAllBtn.onclick = syncAll;
+  main.appendChild(syncAllBtn);
+}
+
+function showSavedList() {
+  currentSection = 9;
+  buildNavTabs();
+  renderSection(9);
+  scrollTop();
+}
+
+function deleteItem(idx) {
+  if (!confirm('¿Eliminar esta ficha?')) return;
+  const list = getSaved();
+  list.splice(idx, 1);
+  setSaved(list);
+  renderSavedList(document.getElementById('main-content'));
+}
+
+// ═══════════════════════════════════════════════════════════
+// SYNC / SUBMIT
+// ═══════════════════════════════════════════════════════════
+async function sendToSheets(data) {
+  if (!CFG.url) throw new Error('URL de Google Apps Script no configurada');
+  const res = await fetch(CFG.url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ encuestador: CFG.nombre, timestamp: new Date().toISOString(), ...data })
+  });
+  return true; // no-cors always resolves
+}
+
+async function syncItem(idx) {
+  if (!isOnline) { showToast('Sin conexión — guardado localmente'); return; }
+  const list = getSaved();
+  const item = list[idx];
+  try {
+    await sendToSheets(item.data);
+    list.splice(idx, 1);
+    setSaved(list);
+    showToast('Sincronizado ✓');
+    renderSavedList(document.getElementById('main-content'));
+  } catch (e) {
+    showToast('Error al sincronizar — se reintentará');
+  }
+}
+
+async function syncAll() {
+  if (!isOnline) { showToast('Sin conexión'); return; }
+  const list = getSaved();
+  let ok = 0;
+  for (const item of list) {
+    try { await sendToSheets(item.data); ok++; } catch {}
+  }
+  setSaved([]);
+  showToast(`${ok} ficha(s) sincronizadas ✓`);
+  renderSavedList(document.getElementById('main-content'));
+}
+
+async function submitForm() {
+  if (!validateSection()) return;
+  // save locally first, always
+  saveLocal();
+  formData = {};
+  if (isOnline && CFG.url) {
+    const list = getSaved();
+    const last = list[list.length - 1];
+    try {
+      await sendToSheets(last.data);
+      list.splice(list.length - 1, 1);
+      setSaved(list);
+      showSuccessModal(true);
+    } catch {
+      showSuccessModal(false);
+    }
+  } else {
+    showSuccessModal(false);
+  }
+}
+
+function showSuccessModal(synced) {
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-icon">${synced ? '✅' : '💾'}</div>
+      <h3>${synced ? 'FICHA ENVIADA' : 'GUARDADA LOCALMENTE'}</h3>
+      <p>${synced
+        ? 'Los datos se registraron correctamente en Google Sheets.'
+        : 'Sin conexión. La ficha quedó guardada en el dispositivo. Se sincronizará cuando haya señal.'}</p>
+      <div class="modal-btns">
+        <button class="btn btn-next" style="flex:1" onclick="this.closest('.overlay').remove(); currentSection=0; buildNavTabs(); renderSection(0); scrollTop();">NUEVA FICHA</button>
+        <button class="btn btn-prev" style="flex:1" onclick="this.closest('.overlay').remove(); currentSection=9; buildNavTabs(); renderSection(9);">VER GUARDADAS</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+let toastTimeout;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
+EOF
