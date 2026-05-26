@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0F2E1E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Propietarios">
+<title>Relevamiento Propietarios — Proyecto Ituzaingó</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ─── VARIABLES ─── */
+  :root {
+    --bg:       #0F2E1E;
+    --header:   #1B392D;
+    --accent:   #59A77F;
+    --accent2:  #3d7a5c;
+    --text:     #CCE6D9;
+    --fill:     #EBF4EF;
+    --card:     #162b1f;
+    --border:   #2e5c42;
+    --danger:   #c0392b;
+    --warn:     #e67e22;
+    --radius:   10px;
+    --font:     'Calibri', 'Segoe UI', sans-serif;
+  }
+
+  /* ─── RESET & BASE ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── LAYOUT ─── */
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ─── TOPBAR ─── */
+  #topbar {
+    background: var(--header);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 2px solid var(--accent);
+    gap: 10px;
+  }
+  #topbar-left { display: flex; align-items: center; gap: 10px; }
+  #topbar-icon { width: 36px; height: 36px; flex-shrink: 0; }
+  #topbar-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  #topbar-sub { font-size: 11px; color: var(--accent); }
+
+  /* ─── BADGE ONLINE/OFFLINE ─── */
+  #status-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  #status-badge.online  { background: rgba(89,167,127,0.2); color: var(--accent); border: 1px solid var(--accent); }
+  #status-badge.offline { background: rgba(192,57,43,0.2);  color: #e74c3c;       border: 1px solid #e74c3c; }
+  #status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .online  #status-dot { background: var(--accent); }
+  .offline #status-dot { background: #e74c3c; }
+
+  /* ─── PROGRESO ─── */
+  #progress-container {
+    background: var(--header);
+    padding: 10px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  #progress-info {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--accent); margin-bottom: 6px;
+    font-weight: 700;
+  }
+  #progress-bar-bg {
+    background: var(--border); border-radius: 4px; height: 6px;
+  }
+  #progress-bar {
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    height: 6px; border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  #block-nav {
+    display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .bnav-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    color: var(--text); font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bnav-dot.active  { border-color: var(--accent); background: var(--accent); color: #0F2E1E; }
+  .bnav-dot.done    { border-color: var(--accent2); background: var(--accent2); color: #0F2E1E; }
+
+  /* ─── CONTENIDO ─── */
+  #content { flex: 1; padding: 16px; max-width: 700px; margin: 0 auto; width: 100%; }
+
+  /* ─── BLOQUE / CARD ─── */
+  .block { display: none; animation: fadeIn 0.25s ease; }
+  .block.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .block-header {
+    background: var(--header);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 14px 16px;
+    margin-bottom: 2px;
+  }
+  .block-header h2 { font-size: 16px; font-weight: 700; color: var(--text); }
+  .block-header p  { font-size: 12px; color: var(--accent); margin-top: 2px; }
+
+  .block-body {
+    background: var(--card);
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-top: none;
+  }
+
+  /* ─── CAMPOS ─── */
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field-label {
+    font-size: 13px; font-weight: 700;
+    color: var(--accent); margin-bottom: 5px; display: block;
+  }
+  .field-tag {
+    font-size: 10px; font-weight: 400;
+    background: var(--border); color: var(--text);
+    padding: 1px 5px; border-radius: 3px;
+    margin-left: 5px; vertical-align: middle;
+  }
+  .field-hint { font-size: 11px; color: #7aaa90; margin-top: 3px; }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="date"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--header);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--font);
+    font-size: 14px;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(89,167,127,0.15);
+  }
+  select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2359A77F' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  select option { background: #1B392D; color: var(--text); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ─── CALC ─── */
+  .calc-field {
+    background: rgba(89,167,127,0.08);
+    border: 1px solid var(--accent2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 15px; font-weight: 700;
+    color: var(--accent);
+    min-height: 42px;
+  }
+
+  /* ─── RADIO / CHECKBOX ─── */
+  .options-grid {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .opt-btn {
+    background: var(--header);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .opt-btn:hover { border-color: var(--accent); }
+  .opt-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0F2E1E;
+    font-weight: 700;
+  }
+
+  /* ─── S/N ─── */
+  .sn-group { display: flex; gap: 8px; }
+  .sn-btn {
+    flex: 1; padding: 10px;
+    background: var(--header);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    text-align: center;
+  }
+  .sn-btn.yes.selected { background: var(--accent);  border-color: var(--accent);  color: #0F2E1E; }
+  .sn-btn.no.selected  { background: #c0392b;        border-color: #c0392b;        color: #fff; }
+
+  /* ─── GPS ─── */
+  .gps-row { display: flex; gap: 8px; align-items: center; }
+  .gps-display {
+    flex: 1;
+    background: var(--header);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px; color: var(--accent);
+    min-height: 42px;
+  }
+  .btn-gps {
+    background: var(--accent);
+    border: none; color: #0F2E1E;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--font);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-gps:hover { background: #4a9070; }
+  .btn-gps:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ─── ESCALA NUMÉRICA ─── */
+  .scale-row { display: flex; gap: 6px; align-items: center; }
+  .scale-btn {
+    width: 44px; height: 44px;
+    background: var(--header);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scale-btn.selected { background: var(--accent); border-color: var(--accent); color: #0F2E1E; }
+  .scale-label { font-size: 11px; color: #7aaa90; margin-left: 4px; }
+
+  /* ─── RODALES ─── */
+  #rodales-container { display: flex; flex-direction: column; gap: 12px; }
+  .rodal-card {
+    background: rgba(27,57,45,0.8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .rodal-header {
+    background: rgba(89,167,127,0.12);
+    padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .rodal-title { font-size: 14px; font-weight: 700; color: var(--accent); }
+  .btn-remove-rodal {
+    background: rgba(192,57,43,0.15);
+    border: 1px solid rgba(192,57,43,0.4);
+    color: #e74c3c;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-family: var(--font);
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-remove-rodal:hover { background: rgba(192,57,43,0.3); }
+  .rodal-body { padding: 14px; }
+  .rodal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 480px) { .rodal-grid { grid-template-columns: 1fr; } }
+
+  .btn-add-rodal {
+    width: 100%;
+    background: rgba(89,167,127,0.1);
+    border: 2px dashed var(--accent2);
+    color: var(--accent);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: var(--font);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 8px;
+  }
+  .btn-add-rodal:hover { background: rgba(89,167,127,0.2); border-style: solid; }
+  .btn-add-rodal:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── RESUMEN RODALES ─── */
+  .resumen-rodales {
+    background: rgba(89,167,127,0.07);
+    border: 1px solid var(--accent2);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-top: 12px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+  }
+  @media (max-width: 480px) { .resumen-rodales { grid-template-columns: 1fr; } }
+  .resumen-item { text-align: center; }
+  .resumen-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .resumen-label { font-size: 11px; color: #7aaa90; }
+
+  /* ─── SEPARADOR ─── */
+  .section-sep {
+    border: none; border-top: 1px solid var(--border);
+    margin: 18px 0;
+  }
+
+  /* ─── NAVEGACIÓN INFERIOR ─── */
+  #nav-buttons {
+    background: var(--header);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex; gap: 10px;
+    position: sticky; bottom: 0;
+    max-width: 700px; margin: 0 auto; width: 100%;
+  }
+  .btn-nav {
+    flex: 1; padding: 13px;
+    font-family: var(--font); font-size: 15px; font-weight: 700;
+    border-radius: var(--radius); border: none;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-prev { background: var(--border); color: var(--text); }
+  .btn-prev:hover { background: #3a6e50; }
+  .btn-next { background: var(--accent); color: #0F2E1E; }
+  .btn-next:hover { background: #4a9070; }
+  .btn-save {
+    background: var(--accent); color: #0F2E1E;
+    flex: 2;
+  }
+  .btn-sync {
+    background: transparent; color: var(--accent);
+    border: 2px solid var(--accent);
+    flex: 1;
+  }
+  .btn-sync:hover { background: rgba(89,167,127,0.1); }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--header); border: 1px solid var(--accent);
+    color: var(--text); padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 700;
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 999; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ─── PANTALLA INICIO ─── */
+  #home-screen {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 60vh; padding: 30px 20px; text-align: center;
+    gap: 20px;
+  }
+  .home-icon { width: 80px; height: 80px; }
+  .home-title { font-size: 22px; font-weight: 700; color: var(--text); }
+  .home-sub { font-size: 14px; color: var(--accent); }
+  .ficha-count {
+    background: var(--header); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 24px;
+    font-size: 14px; color: var(--text);
+  }
+  .ficha-count strong { color: var(--accent); font-size: 24px; display: block; }
+
+  .btn-nueva {
+    background: var(--accent); color: #0F2E1E;
+    border: none; border-radius: var(--radius);
+    padding: 16px 40px; font-family: var(--font);
+    font-size: 17px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    width: 100%; max-width: 320px;
+  }
+  .btn-nueva:hover { background: #4a9070; transform: translateY(-1px); }
+
+  .btn-list {
+    background: transparent; color: var(--accent);
+    border: 2px solid var(--accent2); border-radius: var(--radius);
+    padding: 12px 30px; font-family: var(--font);
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    width: 100%; max-width: 320px;
+  }
+  .btn-list:hover { background: rgba(89,167,127,0.1); }
+
+  /* ─── LISTADO DE FICHAS ─── */
+  #list-screen { display: none; padding: 16px; max-width: 700px; margin: 0 auto; }
+  .ficha-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px;
+  }
+  .ficha-item-info { flex: 1; }
+  .ficha-item-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ficha-item-meta { font-size: 12px; color: var(--accent); margin-top: 2px; }
+  .ficha-item-actions { display: flex; gap: 6px; }
+  .btn-sm {
+    padding: 6px 12px; border-radius: 5px;
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    cursor: pointer; border: none;
+  }
+  .btn-edit { background: var(--accent); color: #0F2E1E; }
+  .btn-del  { background: rgba(192,57,43,0.2); color: #e74c3c; border: 1px solid rgba(192,57,43,0.3); }
+  .btn-sync-item { background: rgba(89,167,127,0.15); color: var(--accent); border: 1px solid var(--accent2); }
+
+  .sync-status {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+  }
+  .sync-ok     { background: rgba(89,167,127,0.2); color: var(--accent); }
+  .sync-pending{ background: rgba(230,126,34,0.2);  color: #e67e22; }
+
+  /* ─── CATEGORÍA BADGE ─── */
+  .cat-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .cat-A { background: rgba(89,167,127,0.3); color: var(--accent); }
+  .cat-B { background: rgba(52,152,219,0.3); color: #5dade2; }
+  .cat-C { background: rgba(241,196,15,0.3); color: #f4d03f; }
+  .cat-D { background: rgba(149,165,166,0.3); color: #aab7b8; }
+
+  /* ─── BACK BUTTON ─── */
+  .btn-back {
+    background: transparent; border: none;
+    color: var(--accent); font-family: var(--font);
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    padding: 8px 0; display: flex; align-items: center; gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  /* ─── MODAL SYNC ─── */
+  #sync-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 200;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  #sync-modal.open { display: flex; }
+  .sync-card {
+    background: var(--header); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    max-width: 400px; width: 100%;
+  }
+  .sync-card h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .sync-card p  { font-size: 13px; color: var(--accent); margin-bottom: 16px; }
+  .sync-url-input {
+    width: 100%; background: var(--bg);
+    border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 10px 12px;
+    font-family: var(--font); font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .sync-actions { display: flex; gap: 8px; }
+  .btn-sync-go   { flex: 2; background: var(--accent); color: #0F2E1E; border: none; border-radius: 6px; padding: 12px; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer; }
+  .btn-sync-cancel { flex: 1; background: var(--border); color: var(--text); border: none; border-radius: 6px; padding: 12px; font-family: var(--font); font-size: 14px; cursor: pointer; }
+  #sync-log { font-size: 12px; color: var(--accent); margin-top: 12px; min-height: 20px; }
+</style>
+
+<!-- PWA Manifest inline -->
+<script>
+const MANIFEST = {
+  name: "Relevamiento Propietarios — Proyecto Ituzaingó",
+  short_name: "Propietarios",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0F2E1E",
+  theme_color: "#0F2E1E",
+  icons: [
+    { src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%230F2E1E'/><g fill='%2359A77F'><polygon points='96,20 130,80 110,80 125,115 107,115 120,148 96,148 72,148 85,115 67,115 82,80 62,80'/><rect x='86' y='148' width='20' height='28' rx='4'/></g></svg>`), sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230F2E1E'/><g fill='%2359A77F'><polygon points='256,50 345,210 293,210 332,305 284,305 318,395 256,395 194,395 228,305 180,305 219,210 167,210'/><rect x='228' y='395' width='56' height='72' rx='10'/></g></svg>`), sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(MANIFEST)], {type:'application/json'});
+const mUrl = URL.createObjectURL(blob);
+const mLink = document.createElement('link');
+mLink.rel = 'manifest'; mLink.href = mUrl;
+document.head.appendChild(mLink);
+</script>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div id="topbar-left">
+      <svg id="topbar-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="8" fill="#1B392D"/>
+        <polygon points="20,4 27,16 23,16 26,23 22,23 25,31 20,31 15,31 18,23 14,23 17,16 13,16" fill="#59A77F"/>
+        <rect x="18" y="31" width="4" height="6" rx="1" fill="#59A77F"/>
+      </svg>
+      <div>
+        <div id="topbar-title">Propietarios Forestales</div>
+        <div id="topbar-sub">Proyecto Ituzaingó</div>
+      </div>
+    </div>
+    <div id="status-badge" class="offline">
+      <div id="status-dot"></div>
+      <span id="status-text">Offline</span>
+    </div>
+  </div>
+
+  <!-- PANTALLA HOME -->
+  <div id="home-screen">
+    <svg class="home-icon" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <rect width="80" height="80" rx="16" fill="#1B392D"/>
+      <polygon points="40,8 54,32 46,32 52,46 44,46 50,62 40,62 30,62 36,46 28,46 34,32 26,32" fill="#59A77F"/>
+      <rect x="36" y="62" width="8" height="12" rx="2" fill="#59A77F"/>
+    </svg>
+    <div>
+      <div class="home-title">Relevamiento de Propietarios</div>
+      <div class="home-sub">Proyecto Ituzaingó — Madera Pulpable</div>
+    </div>
+    <div class="ficha-count">
+      <strong id="home-count">0</strong>
+      fichas guardadas en este dispositivo
+    </div>
+    <button class="btn-nueva" onclick="nuevaFicha()">+ Nueva Ficha</button>
+    <button class="btn-list"  onclick="showList()">Ver Fichas Guardadas</button>
+    <button class="btn-list" style="margin-top:0" onclick="openSyncModal()">⬆ Sincronizar con Google Sheets</button>
+  </div>
+
+  <!-- LISTADO -->
+  <div id="list-screen">
+    <button class="btn-back" onclick="showHome()">← Volver</button>
+    <div id="list-container"></div>
+  </div>
+
+  <!-- PROGRESO (solo visible en formulario) -->
+  <div id="progress-container" style="display:none">
+    <div id="progress-info">
+      <span id="progress-label">Bloque 1 de 7</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+    <div id="block-nav" id="block-nav"></div>
+  </div>
+
+  <!-- FORMULARIO -->
+  <div id="content" style="display:none">
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 1 — DATOS DEL RELEVAMIENTO
+    ══════════════════════════════════════════════ -->
+    <div class="block active" data-block="1">
+      <div class="block-header">
+        <h2>📋 Datos del Relevamiento</h2>
+        <p>Información administrativa de la visita</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">Fecha de relevamiento <span class="field-tag">FECHA</span></label>
+          <input type="date" id="f_fecha">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Nº de ficha <span class="field-tag">AUTO</span></label>
+          <div class="calc-field" id="f_nroficha">—</div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Relevador <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_relevador" placeholder="Nombre del relevador">
+        </div>
+
+        <div class="field">
+          <label class="field-label">¿Habló con el propietario directo? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_contacto_directo" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="f_contacto_directo" data-val="NO">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Nombre del contacto en campo <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_contacto_nombre" placeholder="¿Con quién se habló?">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Cargo / relación con el establecimiento <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_contacto_cargo" placeholder="Ej: encargado, administrador, dueño">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 2 — DATOS DEL PRODUCTOR
+    ══════════════════════════════════════════════ -->
+    <div class="block" data-block="2">
+      <div class="block-header">
+        <h2>👤 Datos del Productor</h2>
+        <p>Identificación y contacto</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">Nombre / Razón social <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_nombre" placeholder="Nombre completo o razón social">
+        </div>
+
+        <div class="field">
+          <label class="field-label">CUIT <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_cuit" placeholder="XX-XXXXXXXX-X" maxlength="13">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Tipo de productor <span class="field-tag">SEL×1</span></label>
+          <div class="options-grid" id="opt_tipo_productor">
+            <button class="opt-btn" data-group="tipo_productor" data-val="Forestal">Forestal</button>
+            <button class="opt-btn" data-group="tipo_productor" data-val="Ganadero">Ganadero</button>
+            <button class="opt-btn" data-group="tipo_productor" data-val="Yerbatero">Yerbatero</button>
+            <button class="opt-btn" data-group="tipo_productor" data-val="Arrocero">Arrocero</button>
+            <button class="opt-btn" data-group="tipo_productor" data-val="Inversor">Inversor</button>
+            <button class="opt-btn" data-group="tipo_productor" data-val="Mixto">Mixto</button>
+            <button class="opt-btn" data-group="tipo_productor" data-val="Otro">Otro</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Teléfono / WhatsApp <span class="field-tag">TEXT</span></label>
+          <input type="tel" id="f_telefono" placeholder="+54 ...">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Correo electrónico <span class="field-tag">TEXT</span></label>
+          <input type="email" id="f_email" placeholder="correo@ejemplo.com">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 3 — UBICACIÓN DEL ESTABLECIMIENTO
+    ══════════════════════════════════════════════ -->
+    <div class="block" data-block="3">
+      <div class="block-header">
+        <h2>📍 Ubicación del Establecimiento</h2>
+        <p>Localización y acceso</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">Provincia <span class="field-tag">SEL×1</span></label>
+          <div class="options-grid">
+            <button class="opt-btn" data-group="provincia" data-val="Corrientes" onclick="updateDepartamentos('Corrientes')">Corrientes</button>
+            <button class="opt-btn" data-group="provincia" data-val="Misiones"   onclick="updateDepartamentos('Misiones')">Misiones</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Departamento <span class="field-tag">SEL×1</span></label>
+          <select id="f_departamento">
+            <option value="">— Seleccione primero la provincia —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Localidad <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_localidad" placeholder="Localidad más cercana">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Nombre del campo <span class="field-tag">TEXT</span></label>
+          <input type="text" id="f_nombre_campo" placeholder="Nombre del establecimiento">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Coordenadas GPS <span class="field-tag">GPS</span></label>
+          <div class="gps-row">
+            <div class="gps-display" id="f_gps_display">Sin captura</div>
+            <button class="btn-gps" onclick="captureGPS()" id="btn-gps-capture">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+              Capturar
+            </button>
+          </div>
+          <input type="hidden" id="f_gps_lat">
+          <input type="hidden" id="f_gps_lng">
+          <div class="field-hint" id="gps-accuracy"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Distancia a ruta asfaltada <span class="field-tag">NUM</span></label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="number" id="f_distancia_ruta" placeholder="0" min="0" step="1" style="flex:1">
+            <span style="color:var(--accent);font-weight:700;flex-shrink:0">km</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Tipo de acceso <span class="field-tag">SEL×1</span></label>
+          <div class="options-grid" id="opt_acceso">
+            <button class="opt-btn" data-group="acceso" data-val="Asfalto">Asfalto</button>
+            <button class="opt-btn" data-group="acceso" data-val="Ripio">Ripio</button>
+            <button class="opt-btn" data-group="acceso" data-val="Tierra consolidada">Tierra consolidada</button>
+            <button class="opt-btn" data-group="acceso" data-val="Tierra complicada en lluvia">Tierra complicada en lluvia</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 4 — SITUACIÓN FORESTAL ACTUAL
+    ══════════════════════════════════════════════ -->
+    <div class="block" data-block="4">
+      <div class="block-header">
+        <h2>🌲 Situación Forestal Actual</h2>
+        <p>Rodales, especies y estado sanitario</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">¿Tiene plantaciones forestales? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_tiene_plantaciones" data-val="SI" onclick="toggleRodales(true)">Sí</button>
+            <button class="sn-btn no"  data-field="f_tiene_plantaciones" data-val="NO" onclick="toggleRodales(false)">No</button>
+          </div>
+        </div>
+
+        <div id="rodales-section" style="display:none">
+          <hr class="section-sep">
+
+          <div class="field">
+            <label class="field-label">Rodales <span class="field-tag">DINÁMICO</span></label>
+            <div id="rodales-container"></div>
+            <button class="btn-add-rodal" id="btn-add-rodal" onclick="addRodal()">
+              <span style="font-size:20px">+</span> Agregar rodal
+            </button>
+          </div>
+
+          <!-- RESUMEN CALC -->
+          <div class="resumen-rodales">
+            <div class="resumen-item">
+              <div class="resumen-value" id="calc_sup_total">0</div>
+              <div class="resumen-label">ha totales forestadas</div>
+            </div>
+            <div class="resumen-item">
+              <div class="resumen-value" id="calc_sup_pino">0</div>
+              <div class="resumen-label">ha de pino</div>
+            </div>
+            <div class="resumen-item">
+              <div class="resumen-value" id="calc_sup_eucalipto">0</div>
+              <div class="resumen-label">ha de eucalipto</div>
+            </div>
+          </div>
+
+          <hr class="section-sep">
+
+          <div class="field">
+            <label class="field-label">Volumen estimado disponible <span class="field-tag">SEL×1</span></label>
+            <div class="options-grid" id="opt_volumen">
+              <button class="opt-btn" data-group="volumen" data-val="<500 t">&lt;500 t</button>
+              <button class="opt-btn" data-group="volumen" data-val="500–2.000 t">500–2.000 t</button>
+              <button class="opt-btn" data-group="volumen" data-val="2.000–5.000 t">2.000–5.000 t</button>
+              <button class="opt-btn" data-group="volumen" data-val=">5.000 t">&gt;5.000 t</button>
+              <button class="opt-btn" data-group="volumen" data-val="No sabe">No sabe</button>
+            </div>
+          </div>
+
+        </div><!-- /rodales-section -->
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 5 — POTENCIAL DE NUEVAS PLANTACIONES
+    ══════════════════════════════════════════════ -->
+    <div class="block" data-block="5">
+      <div class="block-header">
+        <h2>🌱 Potencial de Nuevas Plantaciones</h2>
+        <p>Superficie disponible e interés en forestar</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">¿Tiene superficie disponible para forestar? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_tiene_potencial" data-val="SI" onclick="togglePotencial(true)">Sí</button>
+            <button class="sn-btn no"  data-field="f_tiene_potencial" data-val="NO" onclick="togglePotencial(false)">No</button>
+          </div>
+        </div>
+
+        <div id="potencial-section">
+
+          <div class="field">
+            <label class="field-label">Superficie potencial estimada <span class="field-tag">NUM</span></label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="number" id="f_sup_potencial" placeholder="0" min="0" step="1" style="flex:1">
+              <span style="color:var(--accent);font-weight:700;flex-shrink:0">ha</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Uso actual de esa superficie <span class="field-tag">SEL×N</span></label>
+            <div class="options-grid" id="opt_uso_actual">
+              <button class="opt-btn multi" data-group="uso_actual" data-val="Ganadería">Ganadería</button>
+              <button class="opt-btn multi" data-group="uso_actual" data-val="Campo natural">Campo natural</button>
+              <button class="opt-btn multi" data-group="uso_actual" data-val="Agricultura">Agricultura</button>
+              <button class="opt-btn multi" data-group="uso_actual" data-val="Yerba mate">Yerba mate</button>
+              <button class="opt-btn multi" data-group="uso_actual" data-val="Forestal degradado">Forestal degradado</button>
+              <button class="opt-btn multi" data-group="uso_actual" data-val="Otro">Otro</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Interés en nuevas plantaciones <span class="field-tag">NUM 1–5</span></label>
+            <div class="scale-row">
+              <button class="scale-btn" data-group="interes_plantacion" data-val="1">1</button>
+              <button class="scale-btn" data-group="interes_plantacion" data-val="2">2</button>
+              <button class="scale-btn" data-group="interes_plantacion" data-val="3">3</button>
+              <button class="scale-btn" data-group="interes_plantacion" data-val="4">4</button>
+              <button class="scale-btn" data-group="interes_plantacion" data-val="5">5</button>
+              <span class="scale-label">1=Sin interés · 5=Muy interesado</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Horizonte posible de plantación <span class="field-tag">SEL×1</span></label>
+            <div class="options-grid" id="opt_horizonte">
+              <button class="opt-btn" data-group="horizonte" data-val="Inmediato">Inmediato</button>
+              <button class="opt-btn" data-group="horizonte" data-val="1–2 años">1–2 años</button>
+              <button class="opt-btn" data-group="horizonte" data-val="Más adelante">Más adelante</button>
+              <button class="opt-btn" data-group="horizonte" data-val="No definido">No definido</button>
+            </div>
+          </div>
+
+        </div><!-- /potencial-section -->
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 6 — RELACIÓN COMERCIAL
+    ══════════════════════════════════════════════ -->
+    <div class="block" data-block="6">
+      <div class="block-header">
+        <h2>💼 Relación Comercial</h2>
+        <p>Venta actual e interés en el Proyecto Ituzaingó</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">¿Actualmente vende madera? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_vende_madera" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="f_vende_madera" data-val="NO">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Destino actual de la producción <span class="field-tag">SEL×N</span></label>
+          <div class="options-grid" id="opt_destino">
+            <button class="opt-btn multi" data-group="destino" data-val="Aserraderos">Aserraderos</button>
+            <button class="opt-btn multi" data-group="destino" data-val="Celulosa">Celulosa</button>
+            <button class="opt-btn multi" data-group="destino" data-val="Biomasa">Biomasa</button>
+            <button class="opt-btn multi" data-group="destino" data-val="Venta de rollos">Venta de rollos</button>
+            <button class="opt-btn multi" data-group="destino" data-val="Uso propio">Uso propio</button>
+            <button class="opt-btn multi" data-group="destino" data-val="No comercializa">No comercializa</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">¿Interés en suministrar al Proyecto Ituzaingó? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_interes_ituza" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="f_interes_ituza" data-val="NO">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">¿Interés en contrato de largo plazo? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_interes_contrato" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="f_interes_contrato" data-val="NO">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">¿Interés en forestar mediante convenio/asociación? <span class="field-tag">S/N</span></label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="f_interes_convenio" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="f_interes_convenio" data-val="NO">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Restricciones o comentarios comerciales <span class="field-tag">TEXT</span></label>
+          <textarea id="f_restricciones" placeholder="Restricciones, condiciones, observaciones comerciales..."></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         BLOQUE 7 — EVALUACIÓN FINAL DEL RELEVADOR
+    ══════════════════════════════════════════════ -->
+    <div class="block" data-block="7">
+      <div class="block-header">
+        <h2>⭐ Evaluación Final del Relevador</h2>
+        <p>Clasificación y recomendación</p>
+      </div>
+      <div class="block-body">
+
+        <div class="field">
+          <label class="field-label">Categoría del productor <span class="field-tag">SEL×1</span></label>
+          <div class="options-grid" id="opt_categoria">
+            <button class="opt-btn" data-group="categoria" data-val="A" style="min-width:80px">
+              <span style="color:#59A77F;font-weight:900">A</span> — Gran forestal
+            </button>
+            <button class="opt-btn" data-group="categoria" data-val="B" style="min-width:80px">
+              <span style="color:#5dade2;font-weight:900">B</span> — Mediano con pino
+            </button>
+            <button class="opt-btn" data-group="categoria" data-val="C" style="min-width:80px">
+              <span style="color:#f4d03f;font-weight:900">C</span> — Potencial forestal
+            </button>
+            <button class="opt-btn" data-group="categoria" data-val="D" style="min-width:80px">
+              <span style="color:#aab7b8;font-weight:900">D</span> — Exploratorio
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Aptitud como proveedor de pulpable <span class="field-tag">SEL×1</span></label>
+          <div class="options-grid" id="opt_aptitud">
+            <button class="opt-btn" data-group="aptitud" data-val="Alta">Alta</button>
+            <button class="opt-btn" data-group="aptitud" data-val="Media">Media</button>
+            <button class="opt-btn" data-group="aptitud" data-val="Baja">Baja</button>
+            <button class="opt-btn" data-group="aptitud" data-val="Sin aptitud">Sin aptitud</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Interés percibido del productor <span class="field-tag">NUM 1–5</span></label>
+          <div class="scale-row">
+            <button class="scale-btn" data-group="interes_productor" data-val="1">1</button>
+            <button class="scale-btn" data-group="interes_productor" data-val="2">2</button>
+            <button class="scale-btn" data-group="interes_productor" data-val="3">3</button>
+            <button class="scale-btn" data-group="interes_productor" data-val="4">4</button>
+            <button class="scale-btn" data-group="interes_productor" data-val="5">5</button>
+            <span class="scale-label">1=Sin interés · 5=Muy interesado</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Próximo paso recomendado <span class="field-tag">SEL×1</span></label>
+          <div class="options-grid" id="opt_proximo_paso">
+            <button class="opt-btn" data-group="proximo_paso" data-val="Visita técnica">Visita técnica</button>
+            <button class="opt-btn" data-group="proximo_paso" data-val="Enviar propuesta">Enviar propuesta</button>
+            <button class="opt-btn" data-group="proximo_paso" data-val="Seguimiento largo plazo">Seguimiento largo plazo</button>
+            <button class="opt-btn" data-group="proximo_paso" data-val="Descartar">Descartar</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Comentarios del relevador <span class="field-tag">TEXT</span></label>
+          <textarea id="f_comentarios" placeholder="Observaciones generales, impresiones, contexto..."></textarea>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- BOTONES NAVEGACIÓN -->
+  <div id="nav-buttons" style="display:none">
+    <button class="btn-nav btn-prev" id="btn-prev" onclick="prevBlock()">← Anterior</button>
+    <button class="btn-nav btn-next" id="btn-next" onclick="nextBlock()">Siguiente →</button>
+  </div>
+
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL SYNC -->
+<div id="sync-modal">
+  <div class="sync-card">
+    <h3>⬆ Sincronizar con Google Sheets</h3>
+    <p>Pegá la URL del Apps Script desplegado para enviar las fichas pendientes.</p>
+    <input type="url" class="sync-url-input" id="sync-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="sync-actions">
+      <button class="btn-sync-go"     onclick="syncNow()">Sincronizar</button>
+      <button class="btn-sync-cancel" onclick="closeSyncModal()">Cancelar</button>
+    </div>
+    <div id="sync-log"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SERVICE WORKER (inline registration)
+══════════════════════════════════════════════════════ -->
+<script>
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'propietarios-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => new Response('Offline'))));
+    });
+  `;
+  const swBlob = new Blob([swCode], {type:'text/javascript'});
+  const swUrl  = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+</script>
+
+<!-- ══════════════════════════════════════════════════════
+     LÓGICA PRINCIPAL
+══════════════════════════════════════════════════════ -->
+<script>
+// ─── CONSTANTES ───────────────────────────────────────
+const STORAGE_KEY  = 'propietarios_fichas_v1';
+const SYNC_URL_KEY = 'propietarios_sync_url';
+const TOTAL_BLOCKS = 7;
+
+const DEPARTAMENTOS = {
+  Corrientes: ["Bella Vista","Berón de Astrada","Capital","Concepción","Curuzú Cuatiá","Empedrado","Esquina","General Alvear","General Paz","Goya","Itatí","Ituzaingó","Lavalle","Mburucuyá","Mercedes","Monte Caseros","Paso de los Libres","Saladas","San Cosme","San Luis del Palmar","San Martín","San Miguel","San Roque","Santo Tomé","Sauce"],
+  Misiones:   ["Apóstoles","Cainguás","Candelaria","Capital","Concepción","Eldorado","General Manuel Belgrano","Guaraní","Iguazú","Leandro N. Alem","Libertador General San Martín","Montecarlo","Oberá","San Ignacio","San Javier","San Pedro","25 de Mayo"]
+};
+
+// ─── ESTADO ───────────────────────────────────────────
+let currentBlock = 1;
+let currentFichaId = null;
+let rodalesCount = 0;
+const MAX_RODALES = 10;
+
+// ─── ONLINE/OFFLINE ───────────────────────────────────
+function updateStatus() {
+  const badge = document.getElementById('status-badge');
+  const text  = document.getElementById('status-text');
+  if (navigator.onLine) {
+    badge.className = 'online';
+    text.textContent = 'Online';
+  } else {
+    badge.className = 'offline';
+    text.textContent = 'Offline';
+  }
+}
+window.addEventListener('online',  updateStatus);
+window.addEventListener('offline', updateStatus);
+updateStatus();
+
+// ─── STORAGE ─────────────────────────────────────────
+function getFichas() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveFichas(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+function getFichaById(id) {
+  return getFichas().find(f => f.id === id) || null;
+}
+function upsertFicha(ficha) {
+  const arr = getFichas();
+  const idx = arr.findIndex(f => f.id === ficha.id);
+  if (idx >= 0) arr[idx] = ficha; else arr.push(ficha);
+  saveFichas(arr);
+}
+function deleteFicha(id) {
+  saveFichas(getFichas().filter(f => f.id !== id));
+}
+function nextFichaNum() {
+  const arr = getFichas();
+  return arr.length > 0 ? Math.max(...arr.map(f => f.num || 0)) + 1 : 1;
+}
+
+// ─── PANTALLAS ────────────────────────────────────────
+function showHome() {
+  document.getElementById('home-screen').style.display   = 'flex';
+  document.getElementById('list-screen').style.display   = 'none';
+  document.getElementById('progress-container').style.display = 'none';
+  document.getElementById('content').style.display       = 'none';
+  document.getElementById('nav-buttons').style.display   = 'none';
+  document.getElementById('home-count').textContent = getFichas().length;
+}
+
+function showList() {
+  document.getElementById('home-screen').style.display   = 'none';
+  document.getElementById('list-screen').style.display   = 'block';
+  document.getElementById('progress-container').style.display = 'none';
+  document.getElementById('content').style.display       = 'none';
+  document.getElementById('nav-buttons').style.display   = 'none';
+  renderList();
+}
+
+function showForm() {
+  document.getElementById('home-screen').style.display   = 'none';
+  document.getElementById('list-screen').style.display   = 'none';
+  document.getElementById('progress-container').style.display = 'block';
+  document.getElementById('content').style.display       = 'block';
+  document.getElementById('nav-buttons').style.display   = 'flex';
+}
+
+// ─── LISTA DE FICHAS ──────────────────────────────────
+function renderList() {
+  const fichas = getFichas();
+  const container = document.getElementById('list-container');
+  if (!fichas.length) {
+    container.innerHTML = '<p style="color:var(--accent);text-align:center;padding:30px">No hay fichas guardadas</p>';
+    return;
+  }
+  container.innerHTML = fichas.slice().reverse().map(f => {
+    const cat = f.data?.categoria || '?';
+    const catClass = ['A','B','C','D'].includes(cat) ? `cat-${cat}` : '';
+    const sync = f.synced ? '<span class="sync-status sync-ok">✓ Sync</span>' : '<span class="sync-status sync-pending">Pendiente</span>';
+    return `
+    <div class="ficha-item">
+      <div class="ficha-item-info">
+        <div class="ficha-item-name">
+          <span class="cat-badge ${catClass}">${cat}</span>
+          &nbsp;${f.data?.nombre || '(Sin nombre)'}${sync}
+        </div>
+        <div class="ficha-item-meta">Ficha #${f.num || '?'} · ${f.data?.fecha || ''} · ${f.data?.provincia || ''} ${f.data?.departamento || ''}</div>
+      </div>
+      <div class="ficha-item-actions">
+        <button class="btn-sm btn-edit" onclick="editFicha('${f.id}')">Editar</button>
+        <button class="btn-sm btn-del"  onclick="confirmarEliminar('${f.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function confirmarEliminar(id) {
+  if (confirm('¿Eliminar esta ficha? Esta acción no se puede deshacer.')) {
+    deleteFicha(id);
+    renderList();
+    showToast('Ficha eliminada');
+  }
+}
+
+// ─── NUEVA FICHA ──────────────────────────────────────
+function nuevaFicha() {
+  currentFichaId = 'ficha_' + Date.now();
+  currentBlock   = 1;
+  rodalesCount   = 0;
+  clearForm();
+  setFecha();
+  setNroFicha(nextFichaNum());
+  document.getElementById('rodales-container').innerHTML = '';
+  document.getElementById('rodales-section').style.display = 'none';
+  goToBlock(1);
+  showForm();
+}
+
+function editFicha(id) {
+  currentFichaId = id;
+  const ficha = getFichaById(id);
+  if (!ficha) return;
+  rodalesCount = 0;
+  clearForm();
+  loadFormData(ficha.data);
+  goToBlock(1);
+  showForm();
+}
+
+// ─── NAVEGACIÓN DE BLOQUES ────────────────────────────
+function goToBlock(n) {
+  document.querySelectorAll('.block').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.block[data-block="${n}"]`).classList.add('active');
+  currentBlock = n;
+  updateProgress();
+  updateNavButtons();
+  window.scrollTo(0, 0);
+}
+
+function nextBlock() {
+  autoSave();
+  if (currentBlock < TOTAL_BLOCKS) goToBlock(currentBlock + 1);
+}
+
+function prevBlock() {
+  if (currentBlock > 1) goToBlock(currentBlock - 1);
+}
+
+function updateProgress() {
+  const pct = Math.round(((currentBlock - 1) / TOTAL_BLOCKS) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `Bloque ${currentBlock} de ${TOTAL_BLOCKS}`;
+  document.getElementById('progress-pct').textContent   = pct + '%';
+  renderBlockNav();
+}
+
+function renderBlockNav() {
+  const labels = ['1','2','3','4','5','6','7'];
+  const nav = document.getElementById('block-nav');
+  nav.innerHTML = labels.map((l, i) => {
+    const n = i + 1;
+    let cls = 'bnav-dot';
+    if (n === currentBlock) cls += ' active';
+    else if (n < currentBlock) cls += ' done';
+    return `<button class="${cls}" onclick="goToBlock(${n})" title="Bloque ${n}">${l}</button>`;
+  }).join('');
+}
+
+function updateNavButtons() {
+  const prev = document.getElementById('btn-prev');
+  const next = document.getElementById('btn-next');
+  prev.style.display = currentBlock === 1 ? 'none' : '';
+  if (currentBlock === TOTAL_BLOCKS) {
+    next.textContent = '💾 Guardar ficha';
+    next.onclick = () => { autoSave(true); };
+  } else {
+    next.textContent = 'Siguiente →';
+    next.onclick = nextBlock;
+  }
+}
+
+// ─── GPS ──────────────────────────────────────────────
+function captureGPS() {
+  const btn = document.getElementById('btn-gps-capture');
+  btn.disabled = true; btn.textContent = 'Capturando...';
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude.toFixed(6);
+    const lng = pos.coords.longitude.toFixed(6);
+    const acc = Math.round(pos.coords.accuracy);
+    document.getElementById('f_gps_lat').value = lat;
+    document.getElementById('f_gps_lng').value = lng;
+    document.getElementById('f_gps_display').textContent = `${lat}, ${lng}`;
+    document.getElementById('gps-accuracy').textContent  = `Precisión: ±${acc} m`;
+    btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Capturar`;
+    showToast('GPS capturado ✓');
+  }, err => {
+    btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Capturar`;
+    showToast('No se pudo obtener GPS');
+  }, { enableHighAccuracy: true, timeout: 15000 });
+}
+
+// ─── DEPARTAMENTOS ────────────────────────────────────
+function updateDepartamentos(prov) {
+  const sel = document.getElementById('f_departamento');
+  const deps = DEPARTAMENTOS[prov] || [];
+  sel.innerHTML = '<option value="">— Seleccionar departamento —</option>' +
+    deps.map(d => `<option value="${d}">${d}</option>`).join('');
+}
+
+// ─── RODALES ──────────────────────────────────────────
+function toggleRodales(show) {
+  document.getElementById('rodales-section').style.display = show ? 'block' : 'none';
+  if (show && rodalesCount === 0) addRodal();
+}
+
+function addRodal() {
+  if (rodalesCount >= MAX_RODALES) { showToast('Máximo 10 rodales'); return; }
+  rodalesCount++;
+  const id = rodalesCount;
+  const container = document.getElementById('rodales-container');
+  const card = document.createElement('div');
+  card.className = 'rodal-card'; card.id = `rodal-${id}`;
+  const anioActual = new Date().getFullYear();
+  card.innerHTML = `
+    <div class="rodal-header">
+      <span class="rodal-title">Rodal ${id}</span>
+      <button class="btn-remove-rodal" onclick="removeRodal(${id})">✕ Eliminar</button>
+    </div>
+    <div class="rodal-body">
+      <div class="rodal-grid">
+        <div class="field">
+          <label class="field-label">Especie</label>
+          <select id="rod_especie_${id}" onchange="recalcRodales()">
+            <option value="">— Seleccionar —</option>
+            <option value="P. taeda">P. taeda</option>
+            <option value="P. elliottii">P. elliottii</option>
+            <option value="Híbrido">Híbrido</option>
+            <option value="Eucalipto">Eucalipto</option>
+            <option value="Otra">Otra</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Superficie (ha)</label>
+          <input type="number" id="rod_sup_${id}" placeholder="0" min="0" step="0.1" oninput="recalcRodales()">
+        </div>
+        <div class="field">
+          <label class="field-label">Año de plantación</label>
+          <input type="number" id="rod_anio_${id}" placeholder="${anioActual - 10}" min="1960" max="${anioActual}" oninput="recalcEdad(${id})">
+        </div>
+        <div class="field">
+          <label class="field-label">Edad (calculada)</label>
+          <div class="calc-field" id="rod_edad_${id}">—</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Raleos realizados</label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="rod_raleo_${id}" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="rod_raleo_${id}" data-val="NO">No</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Podas realizadas</label>
+          <div class="sn-group">
+            <button class="sn-btn yes" data-field="rod_poda_${id}" data-val="SI">Sí</button>
+            <button class="sn-btn no"  data-field="rod_poda_${id}" data-val="NO">No</button>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label class="field-label">Estado sanitario</label>
+        <div class="options-grid" id="opt_rod_estado_${id}">
+          <button class="opt-btn" data-group="rod_estado_${id}" data-val="Bueno">Bueno</button>
+          <button class="opt-btn" data-group="rod_estado_${id}" data-val="Regular">Regular</button>
+          <button class="opt-btn" data-group="rod_estado_${id}" data-val="Malo">Malo</button>
+          <button class="opt-btn" data-group="rod_estado_${id}" data-val="Quemado">Quemado</button>
+        </div>
+      </div>
+    </div>`;
+  container.appendChild(card);
+  initSnButtons(card);
+  initOptButtons(card);
+  updateAddBtn();
+  recalcRodales();
+}
+
+function removeRodal(id) {
+  const card = document.getElementById(`rodal-${id}`);
+  if (card) card.remove();
+  recalcRodales();
+  updateAddBtn();
+}
+
+function updateAddBtn() {
+  const btn = document.getElementById('btn-add-rodal');
+  const count = document.querySelectorAll('.rodal-card').length;
+  btn.disabled = count >= MAX_RODALES;
+  btn.textContent = count >= MAX_RODALES ? `Máximo ${MAX_RODALES} rodales` : '+ Agregar rodal';
+}
+
+function recalcEdad(id) {
+  const anio = parseInt(document.getElementById(`rod_anio_${id}`)?.value);
+  const edadEl = document.getElementById(`rod_edad_${id}`);
+  if (edadEl) edadEl.textContent = (anio && anio > 1960) ? (new Date().getFullYear() - anio) + ' años' : '—';
+}
+
+function recalcRodales() {
+  let totalHa = 0, pinoHa = 0, eucaHa = 0;
+  const cards = document.querySelectorAll('.rodal-card');
+  cards.forEach(card => {
+    const idMatch = card.id.match(/rodal-(\d+)/);
+    if (!idMatch) return;
+    const id = idMatch[1];
+    const sup     = parseFloat(document.getElementById(`rod_sup_${id}`)?.value) || 0;
+    const especie = document.getElementById(`rod_especie_${id}`)?.value || '';
+    totalHa += sup;
+    if (['P. taeda','P. elliottii','Híbrido'].includes(especie)) pinoHa += sup;
+    if (especie === 'Eucalipto') eucaHa += sup;
+    recalcEdad(parseInt(id));
+  });
+  document.getElementById('calc_sup_total').textContent    = totalHa.toFixed(1);
+  document.getElementById('calc_sup_pino').textContent     = pinoHa.toFixed(1);
+  document.getElementById('calc_sup_eucalipto').textContent = eucaHa.toFixed(1);
+}
+
+// ─── TOGGLE POTENCIAL ────────────────────────────────
+function togglePotencial(show) {
+  // Se muestra siempre; solo informativo
+}
+
+// ─── BOTONES S/N ─────────────────────────────────────
+function initSnButtons(root) {
+  root.querySelectorAll('.sn-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const field = this.dataset.field;
+      root.querySelectorAll(`.sn-btn[data-field="${field}"]`).forEach(b => b.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+}
+
+// ─── BOTONES OPT (SEL×1 y SEL×N) ────────────────────
+function initOptButtons(root) {
+  root.querySelectorAll('.opt-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const group = this.dataset.group;
+      const isMulti = this.classList.contains('multi');
+      if (isMulti) {
+        this.classList.toggle('selected');
+      } else {
+        root.querySelectorAll(`.opt-btn[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+        this.classList.add('selected');
+      }
+    });
+  });
+}
+
+// Scale buttons (SEL×1)
+function initScaleButtons(root) {
+  root.querySelectorAll('.scale-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const group = this.dataset.group;
+      root.querySelectorAll(`.scale-btn[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+}
+
+// ─── FECHA Y NRO FICHA ───────────────────────────────
+function setFecha() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f_fecha').value = today;
+}
+function setNroFicha(n) {
+  document.getElementById('f_nroficha').textContent = 'F-' + String(n).padStart(4, '0');
+}
+
+// ─── CUIT FORMAT ─────────────────────────────────────
+document.getElementById('f_cuit').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'');
+  if (v.length > 2)  v = v.slice(0,2) + '-' + v.slice(2);
+  if (v.length > 11) v = v.slice(0,11) + '-' + v.slice(11);
+  this.value = v.slice(0,13);
+});
+
+// ─── LEER DATOS DEL FORM ─────────────────────────────
+function collectFormData() {
+  const d = {};
+
+  // Campos simples por ID
+  const textIds = ['f_fecha','f_relevador','f_contacto_nombre','f_contacto_cargo',
+    'f_nombre','f_cuit','f_telefono','f_email','f_localidad','f_nombre_campo',
+    'f_gps_lat','f_gps_lng','f_distancia_ruta','f_sup_potencial',
+    'f_restricciones','f_comentarios'];
+  textIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) d[id.replace('f_','')] = el.value;
+  });
+
+  d.nroficha = document.getElementById('f_nroficha').textContent;
+  d.gps_display = document.getElementById('f_gps_display').textContent;
+
+  // SEL×1 (opt-btn no multi)
+  const sel1Groups = ['tipo_productor','provincia','acceso','volumen','horizonte',
+    'categoria','aptitud','proximo_paso','interes_plantacion','interes_productor'];
+  sel1Groups.forEach(g => {
+    const sel = document.querySelector(`.opt-btn[data-group="${g}"].selected, .scale-btn[data-group="${g}"].selected`);
+    d[g] = sel ? sel.dataset.val : '';
+  });
+
+  // SEL×N (multi)
+  const selNGroups = ['uso_actual','destino'];
+  selNGroups.forEach(g => {
+    const sels = document.querySelectorAll(`.opt-btn.multi[data-group="${g}"].selected`);
+    d[g] = Array.from(sels).map(b => b.dataset.val).join(', ');
+  });
+
+  // S/N fields
+  const snFields = ['f_contacto_directo','f_tiene_plantaciones','f_tiene_potencial',
+    'f_vende_madera','f_interes_ituza','f_interes_contrato','f_interes_convenio'];
+  snFields.forEach(f => {
+    const sel = document.querySelector(`.sn-btn[data-field="${f}"].selected`);
+    d[f.replace('f_','')] = sel ? sel.dataset.val : '';
+  });
+
+  // Calcs
+  d.calc_sup_total     = document.getElementById('calc_sup_total').textContent;
+  d.calc_sup_pino      = document.getElementById('calc_sup_pino').textContent;
+  d.calc_sup_eucalipto = document.getElementById('calc_sup_eucalipto').textContent;
+  d.departamento       = document.getElementById('f_departamento').value;
+
+  // Rodales
+  const rodales = [];
+  document.querySelectorAll('.rodal-card').forEach(card => {
+    const idMatch = card.id.match(/rodal-(\d+)/);
+    if (!idMatch) return;
+    const id = idMatch[1];
+    const raleo  = card.querySelector(`.sn-btn[data-field="rod_raleo_${id}"].selected`);
+    const poda   = card.querySelector(`.sn-btn[data-field="rod_poda_${id}"].selected`);
+    const estado = card.querySelector(`.opt-btn[data-group="rod_estado_${id}"].selected`);
+    rodales.push({
+      num:     parseInt(id),
+      especie: document.getElementById(`rod_especie_${id}`)?.value || '',
+      sup:     document.getElementById(`rod_sup_${id}`)?.value || '',
+      anio:    document.getElementById(`rod_anio_${id}`)?.value || '',
+      edad:    document.getElementById(`rod_edad_${id}`)?.textContent || '',
+      raleo:   raleo  ? raleo.dataset.val  : '',
+      poda:    poda   ? poda.dataset.val   : '',
+      estado:  estado ? estado.dataset.val : ''
+    });
+  });
+  d.rodales = rodales;
+
+  return d;
+}
+
+// ─── CARGAR DATOS EN EL FORM ─────────────────────────
+function loadFormData(data) {
+  if (!data) return;
+
+  const textIds = ['f_fecha','f_relevador','f_contacto_nombre','f_contacto_cargo',
+    'f_nombre','f_cuit','f_telefono','f_email','f_localidad','f_nombre_campo',
+    'f_distancia_ruta','f_sup_potencial','f_restricciones','f_comentarios'];
+  textIds.forEach(id => {
+    const el = document.getElementById(id);
+    const key = id.replace('f_','');
+    if (el && data[key] !== undefined) el.value = data[key];
+  });
+
+  if (data.nroficha) document.getElementById('f_nroficha').textContent = data.nroficha;
+  if (data.gps_display && data.gps_display !== 'Sin captura') {
+    document.getElementById('f_gps_display').textContent = data.gps_display;
+    document.getElementById('f_gps_lat').value = data.gps_lat || '';
+    document.getElementById('f_gps_lng').value = data.gps_lng || '';
+  }
+
+  // Provincia y departamento
+  if (data.provincia) {
+    const provBtn = document.querySelector(`.opt-btn[data-group="provincia"][data-val="${data.provincia}"]`);
+    if (provBtn) { provBtn.classList.add('selected'); updateDepartamentos(data.provincia); }
+  }
+  if (data.departamento) {
+    setTimeout(() => { document.getElementById('f_departamento').value = data.departamento; }, 50);
+  }
+
+  // SEL×1
+  const sel1Groups = ['tipo_productor','acceso','volumen','horizonte','categoria','aptitud','proximo_paso'];
+  sel1Groups.forEach(g => {
+    if (data[g]) {
+      const btn = document.querySelector(`.opt-btn[data-group="${g}"][data-val="${data[g]}"]`);
+      if (btn) btn.classList.add('selected');
+    }
+  });
+
+  // Scale
+  ['interes_plantacion','interes_productor'].forEach(g => {
+    if (data[g]) {
+      const btn = document.querySelector(`.scale-btn[data-group="${g}"][data-val="${data[g]}"]`);
+      if (btn) btn.classList.add('selected');
+    }
+  });
+
+  // SEL×N
+  const selNGroups = ['uso_actual','destino'];
+  selNGroups.forEach(g => {
+    if (data[g]) {
+      const vals = data[g].split(', ');
+      vals.forEach(v => {
+        const btn = document.querySelector(`.opt-btn.multi[data-group="${g}"][data-val="${v}"]`);
+        if (btn) btn.classList.add('selected');
+      });
+    }
+  });
+
+  // S/N
+  const snFields = ['f_contacto_directo','f_tiene_plantaciones','f_tiene_potencial',
+    'f_vende_madera','f_interes_ituza','f_interes_contrato','f_interes_convenio'];
+  snFields.forEach(f => {
+    const key = f.replace('f_','');
+    if (data[key]) {
+      const btn = document.querySelector(`.sn-btn[data-field="${f}"][data-val="${data[key]}"]`);
+      if (btn) btn.classList.add('selected');
+    }
+  });
+
+  // Toggle rodales
+  if (data.tiene_plantaciones === 'SI') toggleRodales(true);
+
+  // Restaurar rodales
+  if (data.rodales && data.rodales.length) {
+    document.getElementById('rodales-container').innerHTML = '';
+    rodalesCount = 0;
+    document.getElementById('rodales-section').style.display = 'block';
+    data.rodales.forEach(rod => {
+      addRodal();
+      const id = rodalesCount;
+      const espEl = document.getElementById(`rod_especie_${id}`);
+      const supEl = document.getElementById(`rod_sup_${id}`);
+      const anEl  = document.getElementById(`rod_anio_${id}`);
+      if (espEl) espEl.value = rod.especie;
+      if (supEl) supEl.value = rod.sup;
+      if (anEl)  { anEl.value = rod.anio; recalcEdad(id); }
+      if (rod.raleo) {
+        const b = document.querySelector(`#rodal-${id} .sn-btn[data-field="rod_raleo_${id}"][data-val="${rod.raleo}"]`);
+        if (b) b.classList.add('selected');
+      }
+      if (rod.poda) {
+        const b = document.querySelector(`#rodal-${id} .sn-btn[data-field="rod_poda_${id}"][data-val="${rod.poda}"]`);
+        if (b) b.classList.add('selected');
+      }
+      if (rod.estado) {
+        const b = document.querySelector(`#rodal-${id} .opt-btn[data-group="rod_estado_${id}"][data-val="${rod.estado}"]`);
+        if (b) b.classList.add('selected');
+      }
+    });
+    recalcRodales();
+  }
+}
+
+// ─── AUTO SAVE ────────────────────────────────────────
+function autoSave(final = false) {
+  const data = collectFormData();
+  const num  = parseInt((document.getElementById('f_nroficha').textContent).replace('F-','')) || nextFichaNum();
+  const ficha = {
+    id:     currentFichaId,
+    num:    num,
+    synced: false,
+    data:   data
+  };
+  upsertFicha(ficha);
+  if (final) {
+    showToast('Ficha guardada ✓');
+    setTimeout(showHome, 1200);
+  }
+}
+
+// ─── CLEAR FORM ──────────────────────────────────────
+function clearForm() {
+  // Text inputs
+  document.querySelectorAll('#content input[type="text"], #content input[type="number"], #content input[type="email"], #content input[type="tel"], #content textarea').forEach(el => el.value = '');
+  document.getElementById('f_gps_display').textContent = 'Sin captura';
+  document.getElementById('f_gps_lat').value = '';
+  document.getElementById('f_gps_lng').value = '';
+  document.getElementById('gps-accuracy').textContent = '';
+  // Botones
+  document.querySelectorAll('.opt-btn.selected, .scale-btn.selected').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.sn-btn.selected').forEach(b => b.classList.remove('selected'));
+  // Calcs
+  ['calc_sup_total','calc_sup_pino','calc_sup_eucalipto'].forEach(id => { document.getElementById(id).textContent = '0'; });
+  // Departamento
+  document.getElementById('f_departamento').innerHTML = '<option value="">— Seleccione primero la provincia —</option>';
+}
+
+// ─── SYNC ─────────────────────────────────────────────
+function openSyncModal() {
+  document.getElementById('sync-url-input').value = localStorage.getItem(SYNC_URL_KEY) || '';
+  document.getElementById('sync-log').textContent = '';
+  document.getElementById('sync-modal').classList.add('open');
+}
+function closeSyncModal() { document.getElementById('sync-modal').classList.remove('open'); }
+
+async function syncNow() {
+  const url = document.getElementById('sync-url-input').value.trim();
+  if (!url) { document.getElementById('sync-log').textContent = '⚠ Pegá la URL del Apps Script.'; return; }
+  localStorage.setItem(SYNC_URL_KEY, url);
+  const fichas = getFichas().filter(f => !f.synced);
+  if (!fichas.length) { document.getElementById('sync-log').textContent = '✓ No hay fichas pendientes de sincronización.'; return; }
+  document.getElementById('sync-log').textContent = `Enviando ${fichas.length} ficha(s)...`;
+  let ok = 0, fail = 0;
+  for (const ficha of fichas) {
+    try {
+      const payload = flattenFicha(ficha);
+      const res = await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      ficha.synced = true;
+      upsertFicha(ficha);
+      ok++;
+    } catch(e) { fail++; }
+  }
+  document.getElementById('sync-log').textContent = `✓ ${ok} enviada(s). ${fail ? '⚠ ' + fail + ' con error.' : ''}`;
+  if (ok > 0) renderList();
+}
+
+function flattenFicha(ficha) {
+  const d = ficha.data || {};
+  const base = {
+    id: ficha.id, num: ficha.num,
+    fecha: d.fecha, nroficha: d.nroficha,
+    relevador: d.relevador,
+    contacto_directo: d.contacto_directo,
+    contacto_nombre: d.contacto_nombre,
+    contacto_cargo: d.contacto_cargo,
+    nombre: d.nombre, cuit: d.cuit,
+    tipo_productor: d.tipo_productor,
+    telefono: d.telefono, email: d.email,
+    provincia: d.provincia, departamento: d.departamento,
+    localidad: d.localidad, nombre_campo: d.nombre_campo,
+    gps_lat: d.gps_lat, gps_lng: d.gps_lng,
+    distancia_ruta: d.distancia_ruta, acceso: d.acceso,
+    tiene_plantaciones: d.tiene_plantaciones,
+    calc_sup_total: d.calc_sup_total,
+    calc_sup_pino: d.calc_sup_pino,
+    calc_sup_eucalipto: d.calc_sup_eucalipto,
+    volumen: d.volumen,
+    tiene_potencial: d.tiene_potencial,
+    sup_potencial: d.sup_potencial,
+    uso_actual: d.uso_actual,
+    interes_plantacion: d.interes_plantacion,
+    horizonte: d.horizonte,
+    vende_madera: d.vende_madera,
+    destino: d.destino,
+    interes_ituza: d.interes_ituza,
+    interes_contrato: d.interes_contrato,
+    interes_convenio: d.interes_convenio,
+    restricciones: d.restricciones,
+    categoria: d.categoria,
+    aptitud: d.aptitud,
+    interes_productor: d.interes_productor,
+    proximo_paso: d.proximo_paso,
+    comentarios: d.comentarios
+  };
+  // Aplanar rodales: rodal_1_especie, rodal_1_sup, ...
+  if (d.rodales) {
+    d.rodales.forEach((r, i) => {
+      const n = i + 1;
+      base[`rodal_${n}_especie`] = r.especie;
+      base[`rodal_${n}_sup`]     = r.sup;
+      base[`rodal_${n}_anio`]    = r.anio;
+      base[`rodal_${n}_edad`]    = r.edad;
+      base[`rodal_${n}_raleo`]   = r.raleo;
+      base[`rodal_${n}_poda`]    = r.poda;
+      base[`rodal_${n}_estado`]  = r.estado;
+    });
+  }
+  return base;
+}
+
+// ─── TOAST ────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── INIT ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initSnButtons(document);
+  initOptButtons(document);
+  initScaleButtons(document);
+  goToBlock(1);
+  showHome();
+});
+</script>
+</body>
+</html>
