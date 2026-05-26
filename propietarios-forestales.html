@@ -540,11 +540,6 @@ document.head.appendChild(mLink);
 
   <!-- PANTALLA HOME -->
   <div id="home-screen">
-    <svg class="home-icon" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-      <rect width="80" height="80" rx="16" fill="#1B392D"/>
-      <polygon points="40,8 54,32 46,32 52,46 44,46 50,62 40,62 30,62 36,46 28,46 34,32 26,32" fill="#59A77F"/>
-      <rect x="36" y="62" width="8" height="12" rx="2" fill="#59A77F"/>
-    </svg>
     <div>
       <div class="home-title">Relevamiento de Propietarios</div>
       <div class="home-sub">Proyecto Ituzaingó — Madera Pulpable</div>
@@ -582,7 +577,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block active" data-block="1">
       <div class="block-header">
-        <h2>📋 Datos del Relevamiento</h2>
+        <h2>Datos del Relevamiento</h2>
         <p>Información administrativa de la visita</p>
       </div>
       <div class="block-body">
@@ -628,7 +623,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block" data-block="2">
       <div class="block-header">
-        <h2>👤 Datos del Productor</h2>
+        <h2>Datos del Productor</h2>
         <p>Identificación y contacto</p>
       </div>
       <div class="block-body">
@@ -644,15 +639,15 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Tipo de productor <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Tipo de productor <span class="field-tag">SEL×N</span></label>
           <div class="options-grid" id="opt_tipo_productor">
-            <button class="opt-btn" data-group="tipo_productor" data-val="Forestal">Forestal</button>
-            <button class="opt-btn" data-group="tipo_productor" data-val="Ganadero">Ganadero</button>
-            <button class="opt-btn" data-group="tipo_productor" data-val="Yerbatero">Yerbatero</button>
-            <button class="opt-btn" data-group="tipo_productor" data-val="Arrocero">Arrocero</button>
-            <button class="opt-btn" data-group="tipo_productor" data-val="Inversor">Inversor</button>
-            <button class="opt-btn" data-group="tipo_productor" data-val="Mixto">Mixto</button>
-            <button class="opt-btn" data-group="tipo_productor" data-val="Otro">Otro</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Forestal">Forestal</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Ganadero">Ganadero</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Yerbatero">Yerbatero</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Arrocero">Arrocero</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Inversor">Inversor</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Mixto">Mixto</button>
+            <button class="opt-btn multi" data-group="tipo_productor" data-val="Otro">Otro</button>
           </div>
         </div>
 
@@ -674,7 +669,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block" data-block="3">
       <div class="block-header">
-        <h2>📍 Ubicación del Establecimiento</h2>
+        <h2>Ubicación del Establecimiento</h2>
         <p>Localización y acceso</p>
       </div>
       <div class="block-body">
@@ -744,7 +739,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block" data-block="4">
       <div class="block-header">
-        <h2>🌲 Situación Forestal Actual</h2>
+        <h2>Situación Forestal Actual</h2>
         <p>Rodales, especies y estado sanitario</p>
       </div>
       <div class="block-body">
@@ -807,7 +802,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block" data-block="5">
       <div class="block-header">
-        <h2>🌱 Potencial de Nuevas Plantaciones</h2>
+        <h2>Potencial de Nuevas Plantaciones</h2>
         <p>Superficie disponible e interés en forestar</p>
       </div>
       <div class="block-body">
@@ -874,7 +869,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block" data-block="6">
       <div class="block-header">
-        <h2>💼 Relación Comercial</h2>
+        <h2>Relación Comercial</h2>
         <p>Venta actual e interés en el Proyecto Ituzaingó</p>
       </div>
       <div class="block-body">
@@ -936,7 +931,7 @@ document.head.appendChild(mLink);
     ══════════════════════════════════════════════ -->
     <div class="block" data-block="7">
       <div class="block-header">
-        <h2>⭐ Evaluación Final del Relevador</h2>
+        <h2>Evaluación Final del Relevador</h2>
         <p>Clasificación y recomendación</p>
       </div>
       <div class="block-body">
@@ -1473,7 +1468,7 @@ function collectFormData() {
   d.gps_display = document.getElementById('f_gps_display').textContent;
 
   // SEL×1 (opt-btn no multi)
-  const sel1Groups = ['tipo_productor','provincia','acceso','volumen','horizonte',
+  const sel1Groups = ['provincia','acceso','volumen','horizonte',
     'categoria','aptitud','proximo_paso','interes_plantacion','interes_productor'];
   sel1Groups.forEach(g => {
     const sel = document.querySelector(`.opt-btn[data-group="${g}"].selected, .scale-btn[data-group="${g}"].selected`);
@@ -1481,7 +1476,7 @@ function collectFormData() {
   });
 
   // SEL×N (multi)
-  const selNGroups = ['uso_actual','destino'];
+  const selNGroups = ['tipo_productor','uso_actual','destino'];
   selNGroups.forEach(g => {
     const sels = document.querySelectorAll(`.opt-btn.multi[data-group="${g}"].selected`);
     d[g] = Array.from(sels).map(b => b.dataset.val).join(', ');
