@@ -496,6 +496,36 @@
 
 <!-- PWA Manifest inline -->
 <script>
+// Generar ícono PNG via canvas
+function generateIcon(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const r = size * 0.17;
+  // Fondo
+  ctx.fillStyle = '#0F2E1E';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, r);
+  ctx.fill();
+  // Árbol
+  ctx.fillStyle = '#59A77F';
+  const cx = size / 2;
+  const s = size / 192;
+  // Copa del árbol (polígono)
+  ctx.beginPath();
+  ctx.moveTo(cx, 20*s);
+  ctx.lineTo(130*s, 80*s); ctx.lineTo(110*s, 80*s);
+  ctx.lineTo(125*s, 115*s); ctx.lineTo(107*s, 115*s);
+  ctx.lineTo(120*s, 148*s); ctx.lineTo(72*s, 148*s);
+  ctx.lineTo(85*s, 115*s); ctx.lineTo(67*s, 115*s);
+  ctx.lineTo(82*s, 80*s); ctx.lineTo(62*s, 80*s);
+  ctx.closePath();
+  ctx.fill();
+  // Tronco
+  ctx.fillRect(86*s, 148*s, 20*s, 28*s);
+  return canvas.toDataURL('image/png');
+}
+
 const MANIFEST = {
   name: "Relevamiento Propietarios — Proyecto Ituzaingó",
   short_name: "Propietarios",
@@ -504,8 +534,8 @@ const MANIFEST = {
   background_color: "#0F2E1E",
   theme_color: "#0F2E1E",
   icons: [
-    { src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%230F2E1E'/><g fill='%2359A77F'><polygon points='96,20 130,80 110,80 125,115 107,115 120,148 96,148 72,148 85,115 67,115 82,80 62,80'/><rect x='86' y='148' width='20' height='28' rx='4'/></g></svg>`), sizes: "192x192", type: "image/svg+xml" },
-    { src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230F2E1E'/><g fill='%2359A77F'><polygon points='256,50 345,210 293,210 332,305 284,305 318,395 256,395 194,395 228,305 180,305 219,210 167,210'/><rect x='228' y='395' width='56' height='72' rx='10'/></g></svg>`), sizes: "512x512", type: "image/svg+xml" }
+    { src: generateIcon(192), sizes: "192x192", type: "image/png" },
+    { src: generateIcon(512), sizes: "512x512", type: "image/png" }
   ]
 };
 const blob = new Blob([JSON.stringify(MANIFEST)], {type:'application/json'});
@@ -513,6 +543,12 @@ const mUrl = URL.createObjectURL(blob);
 const mLink = document.createElement('link');
 mLink.rel = 'manifest'; mLink.href = mUrl;
 document.head.appendChild(mLink);
+
+// Apple touch icon
+const appleIcon = document.createElement('link');
+appleIcon.rel = 'apple-touch-icon';
+appleIcon.href = generateIcon(180);
+document.head.appendChild(appleIcon);
 </script>
 </head>
 
@@ -583,22 +619,22 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">Fecha de relevamiento <span class="field-tag">FECHA</span></label>
+          <label class="field-label">Fecha de relevamiento</label>
           <input type="date" id="f_fecha">
         </div>
 
         <div class="field">
-          <label class="field-label">Nº de ficha <span class="field-tag">AUTO</span></label>
+          <label class="field-label">Nº de ficha</label>
           <div class="calc-field" id="f_nroficha">—</div>
         </div>
 
         <div class="field">
-          <label class="field-label">Relevador <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Relevador</label>
           <input type="text" id="f_relevador" placeholder="Nombre del relevador">
         </div>
 
         <div class="field">
-          <label class="field-label">¿Habló con el propietario directo? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Habló con el propietario directo?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_contacto_directo" data-val="SI">Sí</button>
             <button class="sn-btn no"  data-field="f_contacto_directo" data-val="NO">No</button>
@@ -606,12 +642,12 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Nombre del contacto en campo <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Nombre del contacto en campo</label>
           <input type="text" id="f_contacto_nombre" placeholder="¿Con quién se habló?">
         </div>
 
         <div class="field">
-          <label class="field-label">Cargo / relación con el establecimiento <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Cargo / relación con el establecimiento</label>
           <input type="text" id="f_contacto_cargo" placeholder="Ej: encargado, administrador, dueño">
         </div>
 
@@ -629,17 +665,17 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">Nombre / Razón social <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Nombre / Razón social</label>
           <input type="text" id="f_nombre" placeholder="Nombre completo o razón social">
         </div>
 
         <div class="field">
-          <label class="field-label">CUIT <span class="field-tag">TEXT</span></label>
+          <label class="field-label">CUIT</label>
           <input type="text" id="f_cuit" placeholder="XX-XXXXXXXX-X" maxlength="13">
         </div>
 
         <div class="field">
-          <label class="field-label">Tipo de productor <span class="field-tag">SEL×N</span></label>
+          <label class="field-label">Tipo de productor</label>
           <div class="options-grid" id="opt_tipo_productor">
             <button class="opt-btn multi" data-group="tipo_productor" data-val="Forestal">Forestal</button>
             <button class="opt-btn multi" data-group="tipo_productor" data-val="Ganadero">Ganadero</button>
@@ -652,12 +688,12 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Teléfono / WhatsApp <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Teléfono / WhatsApp</label>
           <input type="tel" id="f_telefono" placeholder="+54 ...">
         </div>
 
         <div class="field">
-          <label class="field-label">Correo electrónico <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Correo electrónico</label>
           <input type="email" id="f_email" placeholder="correo@ejemplo.com">
         </div>
 
@@ -675,7 +711,7 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">Provincia <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Provincia</label>
           <div class="options-grid">
             <button class="opt-btn" data-group="provincia" data-val="Corrientes" onclick="updateDepartamentos('Corrientes')">Corrientes</button>
             <button class="opt-btn" data-group="provincia" data-val="Misiones"   onclick="updateDepartamentos('Misiones')">Misiones</button>
@@ -683,24 +719,24 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Departamento <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Departamento</label>
           <select id="f_departamento">
             <option value="">— Seleccione primero la provincia —</option>
           </select>
         </div>
 
         <div class="field">
-          <label class="field-label">Localidad <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Localidad</label>
           <input type="text" id="f_localidad" placeholder="Localidad más cercana">
         </div>
 
         <div class="field">
-          <label class="field-label">Nombre del campo <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Nombre del campo</label>
           <input type="text" id="f_nombre_campo" placeholder="Nombre del establecimiento">
         </div>
 
         <div class="field">
-          <label class="field-label">Coordenadas GPS <span class="field-tag">GPS</span></label>
+          <label class="field-label">Coordenadas GPS</label>
           <div class="gps-row">
             <div class="gps-display" id="f_gps_display">Sin captura</div>
             <button class="btn-gps" onclick="captureGPS()" id="btn-gps-capture">
@@ -714,7 +750,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Distancia a ruta asfaltada <span class="field-tag">NUM</span></label>
+          <label class="field-label">Distancia a ruta asfaltada</label>
           <div style="display:flex;align-items:center;gap:8px">
             <input type="number" id="f_distancia_ruta" placeholder="0" min="0" step="1" style="flex:1">
             <span style="color:var(--accent);font-weight:700;flex-shrink:0">km</span>
@@ -722,7 +758,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Tipo de acceso <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Tipo de acceso</label>
           <div class="options-grid" id="opt_acceso">
             <button class="opt-btn" data-group="acceso" data-val="Asfalto">Asfalto</button>
             <button class="opt-btn" data-group="acceso" data-val="Ripio">Ripio</button>
@@ -745,7 +781,7 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">¿Tiene plantaciones forestales? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Tiene plantaciones forestales?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_tiene_plantaciones" data-val="SI" onclick="toggleRodales(true)">Sí</button>
             <button class="sn-btn no"  data-field="f_tiene_plantaciones" data-val="NO" onclick="toggleRodales(false)">No</button>
@@ -756,7 +792,7 @@ document.head.appendChild(mLink);
           <hr class="section-sep">
 
           <div class="field">
-            <label class="field-label">Rodales <span class="field-tag">DINÁMICO</span></label>
+            <label class="field-label">Rodales</label>
             <div id="rodales-container"></div>
             <button class="btn-add-rodal" id="btn-add-rodal" onclick="addRodal()">
               <span style="font-size:20px">+</span> Agregar rodal
@@ -782,7 +818,7 @@ document.head.appendChild(mLink);
           <hr class="section-sep">
 
           <div class="field">
-            <label class="field-label">Volumen estimado disponible <span class="field-tag">SEL×1</span></label>
+            <label class="field-label">Volumen estimado disponible</label>
             <div class="options-grid" id="opt_volumen">
               <button class="opt-btn" data-group="volumen" data-val="<500 t">&lt;500 t</button>
               <button class="opt-btn" data-group="volumen" data-val="500–2.000 t">500–2.000 t</button>
@@ -808,7 +844,7 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">¿Tiene superficie disponible para forestar? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Tiene superficie disponible para forestar?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_tiene_potencial" data-val="SI" onclick="togglePotencial(true)">Sí</button>
             <button class="sn-btn no"  data-field="f_tiene_potencial" data-val="NO" onclick="togglePotencial(false)">No</button>
@@ -818,7 +854,7 @@ document.head.appendChild(mLink);
         <div id="potencial-section">
 
           <div class="field">
-            <label class="field-label">Superficie potencial estimada <span class="field-tag">NUM</span></label>
+            <label class="field-label">Superficie potencial estimada</label>
             <div style="display:flex;align-items:center;gap:8px">
               <input type="number" id="f_sup_potencial" placeholder="0" min="0" step="1" style="flex:1">
               <span style="color:var(--accent);font-weight:700;flex-shrink:0">ha</span>
@@ -826,7 +862,7 @@ document.head.appendChild(mLink);
           </div>
 
           <div class="field">
-            <label class="field-label">Uso actual de esa superficie <span class="field-tag">SEL×N</span></label>
+            <label class="field-label">Uso actual de esa superficie</label>
             <div class="options-grid" id="opt_uso_actual">
               <button class="opt-btn multi" data-group="uso_actual" data-val="Ganadería">Ganadería</button>
               <button class="opt-btn multi" data-group="uso_actual" data-val="Campo natural">Campo natural</button>
@@ -838,7 +874,7 @@ document.head.appendChild(mLink);
           </div>
 
           <div class="field">
-            <label class="field-label">Interés en nuevas plantaciones <span class="field-tag">NUM 1–5</span></label>
+            <label class="field-label">Interés en nuevas plantaciones</label>
             <div class="scale-row">
               <button class="scale-btn" data-group="interes_plantacion" data-val="1">1</button>
               <button class="scale-btn" data-group="interes_plantacion" data-val="2">2</button>
@@ -850,7 +886,7 @@ document.head.appendChild(mLink);
           </div>
 
           <div class="field">
-            <label class="field-label">Horizonte posible de plantación <span class="field-tag">SEL×1</span></label>
+            <label class="field-label">Horizonte posible de plantación</label>
             <div class="options-grid" id="opt_horizonte">
               <button class="opt-btn" data-group="horizonte" data-val="Inmediato">Inmediato</button>
               <button class="opt-btn" data-group="horizonte" data-val="1–2 años">1–2 años</button>
@@ -875,7 +911,7 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">¿Actualmente vende madera? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Actualmente vende madera?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_vende_madera" data-val="SI">Sí</button>
             <button class="sn-btn no"  data-field="f_vende_madera" data-val="NO">No</button>
@@ -883,7 +919,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Destino actual de la producción <span class="field-tag">SEL×N</span></label>
+          <label class="field-label">Destino actual de la producción</label>
           <div class="options-grid" id="opt_destino">
             <button class="opt-btn multi" data-group="destino" data-val="Aserraderos">Aserraderos</button>
             <button class="opt-btn multi" data-group="destino" data-val="Celulosa">Celulosa</button>
@@ -895,7 +931,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">¿Interés en suministrar al Proyecto Ituzaingó? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Interés en suministrar al Proyecto Ituzaingó?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_interes_ituza" data-val="SI">Sí</button>
             <button class="sn-btn no"  data-field="f_interes_ituza" data-val="NO">No</button>
@@ -903,7 +939,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">¿Interés en contrato de largo plazo? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Interés en contrato de largo plazo?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_interes_contrato" data-val="SI">Sí</button>
             <button class="sn-btn no"  data-field="f_interes_contrato" data-val="NO">No</button>
@@ -911,7 +947,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">¿Interés en forestar mediante convenio/asociación? <span class="field-tag">S/N</span></label>
+          <label class="field-label">¿Interés en forestar mediante convenio/asociación?</label>
           <div class="sn-group">
             <button class="sn-btn yes" data-field="f_interes_convenio" data-val="SI">Sí</button>
             <button class="sn-btn no"  data-field="f_interes_convenio" data-val="NO">No</button>
@@ -919,7 +955,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Restricciones o comentarios comerciales <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Restricciones o comentarios comerciales</label>
           <textarea id="f_restricciones" placeholder="Restricciones, condiciones, observaciones comerciales..."></textarea>
         </div>
 
@@ -937,7 +973,7 @@ document.head.appendChild(mLink);
       <div class="block-body">
 
         <div class="field">
-          <label class="field-label">Categoría del productor <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Categoría del productor</label>
           <div class="options-grid" id="opt_categoria">
             <button class="opt-btn" data-group="categoria" data-val="A" style="min-width:80px">
               <span style="color:#59A77F;font-weight:900">A</span> — Gran forestal
@@ -955,7 +991,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Aptitud como proveedor de pulpable <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Aptitud como proveedor de pulpable</label>
           <div class="options-grid" id="opt_aptitud">
             <button class="opt-btn" data-group="aptitud" data-val="Alta">Alta</button>
             <button class="opt-btn" data-group="aptitud" data-val="Media">Media</button>
@@ -965,7 +1001,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Interés percibido del productor <span class="field-tag">NUM 1–5</span></label>
+          <label class="field-label">Interés percibido del productor</label>
           <div class="scale-row">
             <button class="scale-btn" data-group="interes_productor" data-val="1">1</button>
             <button class="scale-btn" data-group="interes_productor" data-val="2">2</button>
@@ -977,7 +1013,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Próximo paso recomendado <span class="field-tag">SEL×1</span></label>
+          <label class="field-label">Próximo paso recomendado</label>
           <div class="options-grid" id="opt_proximo_paso">
             <button class="opt-btn" data-group="proximo_paso" data-val="Visita técnica">Visita técnica</button>
             <button class="opt-btn" data-group="proximo_paso" data-val="Enviar propuesta">Enviar propuesta</button>
@@ -987,7 +1023,7 @@ document.head.appendChild(mLink);
         </div>
 
         <div class="field">
-          <label class="field-label">Comentarios del relevador <span class="field-tag">TEXT</span></label>
+          <label class="field-label">Comentarios del relevador</label>
           <textarea id="f_comentarios" placeholder="Observaciones generales, impresiones, contexto..."></textarea>
         </div>
 
