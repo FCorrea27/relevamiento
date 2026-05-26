@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Relevamiento Aserraderos · Proyecto Ituzaingó</title>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+:root {
+  --bg:       #0F2E1E;
+  --bg2:      #1B392D;
+  --bg3:      #214732;
+  --card:     #1B392D;
+  --card2:    #214732;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --accent:   #59A77F;
+  --accent2:  #9ADAB7;
+  --accent3:  #3A8B6B;
+  --danger:   #2B6046;
+  --warn:     #2F7D53;
+  --ok:       #59A77F;
+  --text:     #FFFFFF;
+  --text2:    #CCE6D9;
+  --text3:    #3A8B6B;
+  --mono:     'Calibri', sans-serif;
+  --sans:     'Calibri', sans-serif;
+  --r:        10px;
+  --r2:       6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* TOP BAR */
+.topbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border2);
+  padding: 14px 28px; display: flex; align-items: center; gap: 20px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-logo { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); letter-spacing: 0.08em; }
+.topbar-sep { color: var(--text3); }
+.topbar-title { font-size: 0.8rem; color: var(--text2); }
+.topbar-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+/* TABS */
+.tabs { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; }
+.tab { padding: 11px 18px; font-size: 0.72rem; font-family: var(--mono); letter-spacing: 0.05em;
+  color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover:not(.active) { color: var(--text2); }
+
+/* IMPORT BAR */
+.import-bar {
+  background: linear-gradient(90deg, #0F2E1E, #0f2840);
+  border: 1px solid var(--border2); border-radius: var(--r);
+  padding: 14px 20px; margin: 20px 28px 0;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.import-bar label { font-size: 0.72rem; font-family: var(--mono); color: var(--text2); }
+.import-bar input[type=file] { font-size: 0.72rem; color: var(--text2); background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: var(--r2); padding: 6px 10px; flex: 1; min-width: 200px; }
+.import-bar input[type=text] { font-size: 0.72rem; color: var(--text); background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: var(--r2); padding: 6px 10px; flex: 2; min-width: 260px;
+  font-family: var(--mono); outline: none; }
+.import-bar input[type=text]::placeholder { color: var(--text3); }
+.btn { padding: 8px 16px; border-radius: var(--r2); border: none; cursor: pointer;
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.04em; font-weight: 600; transition: all 0.15s; }
+.btn:active { transform: scale(0.97); }
+.btn-accent { background: var(--accent); color: #021a14; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-outline:hover { background: var(--bg3); }
+
+/* LAYOUT */
+.page { display: none; padding: 24px 28px 48px; }
+.page.active { display: block; }
+
+/* METRICS ROW */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.metric-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.metric-label { font-size: 0.65rem; font-family: var(--mono); color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; }
+.metric-val { font-size: 1.6rem; font-family: var(--mono); font-weight: 600; color: var(--text); line-height: 1; }
+.metric-sub { font-size: 0.68rem; color: var(--text2); }
+.metric-accent { color: var(--accent); }
+.metric-warn { color: var(--warn); }
+.metric-danger { color: var(--danger); }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+/* CARDS */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 20px; }
+.card-title { font-size: 0.68rem; font-family: var(--mono); color: var(--text2); letter-spacing: 0.07em; margin-bottom: 16px; text-transform: uppercase; }
+.card.span2 { grid-column: span 2; }
+
+/* SCORE BADGE */
+.score-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 0.68rem; font-family: var(--mono); font-weight: 600; letter-spacing: 0.04em;
+}
+.score-apto { background: #0a2e20; color: var(--accent); border: 1px solid var(--accent); }
+.score-mejoras { background: #1B392D; color: var(--accent2); border: 1px solid var(--accent2); }
+.score-inversion { background: #1B392D; color: var(--warn); border: 1px solid var(--warn); }
+.score-no { background: #1B392D; color: var(--danger); border: 1px solid var(--danger); }
+
+/* RANKING TABLE */
+.rank-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.rank-table th { font-size: 0.62rem; font-family: var(--mono); color: var(--text3); letter-spacing: 0.06em;
+  padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+.rank-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.rank-table tr:last-child td { border-bottom: none; }
+.rank-table tr:hover td { background: var(--bg3); }
+.rank-num { font-family: var(--mono); font-size: 0.65rem; color: var(--text3); }
+.rank-name { font-weight: 500; color: var(--text); }
+.rank-score { font-family: var(--mono); font-size: 0.85rem; font-weight: 600; }
+
+/* PROGRESS BAR INLINE */
+.prog-wrap { display: flex; align-items: center; gap: 8px; }
+.prog-bar-bg { flex: 1; height: 5px; background: var(--bg3); border-radius: 3px; }
+.prog-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.prog-val { font-size: 0.68rem; font-family: var(--mono); color: var(--text2); min-width: 28px; text-align: right; }
+
+/* SPIDER / RADAR container */
+.radar-wrap { position: relative; height: 300px; }
+
+/* DETAIL PANEL */
+.detail-panel { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r);
+  padding: 20px; margin-top: 16px; }
+.detail-panel h3 { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); margin-bottom: 14px; letter-spacing: 0.06em; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.detail-item { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r2); padding: 10px 12px; }
+.detail-item-label { font-size: 0.62rem; font-family: var(--mono); color: var(--text3); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; }
+.detail-item-val { font-size: 0.82rem; color: var(--text); }
+
+/* FILTER BAR */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.filter-bar select { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r2);
+  padding: 7px 12px; font-size: 0.75rem; color: var(--text); outline: none; font-family: var(--mono); }
+.filter-bar select:focus { border-color: var(--accent); }
+.filter-chip { padding: 5px 12px; border-radius: 20px; font-size: 0.68rem; font-family: var(--mono);
+  cursor: pointer; border: 1px solid var(--border2); color: var(--text2); background: var(--bg3); transition: all 0.15s; }
+.filter-chip.active { background: var(--accent); color: #021a14; border-color: var(--accent); }
+
+/* MAP */
+#map-svg path { transition: opacity 0.2s; }
+#map-svg path:hover { opacity: 0.7; cursor: pointer; }
+.map-tooltip { position: absolute; background: var(--card2); border: 1px solid var(--border2);
+  border-radius: var(--r2); padding: 8px 12px; font-size: 0.72rem; pointer-events: none;
+  z-index: 50; color: var(--text); display: none; white-space: nowrap; font-family: var(--mono); }
+
+/* BRECHA GRID */
+.brecha-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.brecha-row { display: flex; align-items: center; gap: 10px; }
+.brecha-label { font-size: 0.75rem; color: var(--text2); width: 230px; flex-shrink: 0; }
+.brecha-bars { flex: 1; display: flex; gap: 4px; }
+.brecha-bar { height: 22px; border-radius: 3px; min-width: 6px; display: flex; align-items: center;
+  justify-content: center; font-size: 0.6rem; font-family: var(--mono); color: rgba(0,0,0,0.7); transition: width 0.5s; }
+.brecha-count { font-size: 0.65rem; font-family: var(--mono); color: var(--text3); width: 28px; text-align: right; }
+
+/* EMPTY STATE */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; gap: 12px; }
+.empty-state h3 { font-family: var(--mono); color: var(--text2); font-size: 0.9rem; }
+.empty-state p { font-size: 0.8rem; color: var(--text3); text-align: center; max-width: 360px; line-height: 1.6; }
+
+/* CHIPS SELECT TABLE */
+.sel-row td { cursor: pointer; }
+.sel-row.selected td { background: #0F2E1E !important; }
+
+/* COMPARE SECTION */
+.compare-radar { position: relative; height: 340px; }
+
+/* SCROLLABLE table wrap */
+.table-scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">PROYECTO ITUZAINGÓ</span>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Dashboard de Relevamiento · Aserraderos</span>
+  <div class="topbar-right">
+    <span id="n-total" style="font-size:0.7rem;font-family:var(--mono);color:var(--text2)">0 aserraderos</span>
+    <button class="btn btn-outline" onclick="exportCSV()">↓ Exportar CSV</button>
+    <button class="btn btn-accent" onclick="loadDemo()">Demo</button>
+  </div>
+</div>
+
+<!-- IMPORT BAR -->
+<div class="import-bar">
+  <label>CARGAR DATOS</label>
+  <input type="file" id="csv-file" accept=".csv,.tsv" onchange="loadCSV(this)">
+  <span style="font-size:0.7rem;color:var(--text3)">ó</span>
+  <input type="text" id="sheet-url" placeholder="URL de Google Sheets (publicada como CSV)">
+  <button class="btn btn-accent" onclick="loadFromSheets()">Conectar Sheet →</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('resumen')">RESUMEN</div>
+  <div class="tab" onclick="switchTab('ranking')">RANKING</div>
+  <div class="tab" onclick="switchTab('brecha')">BRECHA TÉCNICA</div>
+  <div class="tab" onclick="switchTab('comparar')">COMPARAR</div>
+  <div class="tab" onclick="switchTab('mapa')">MAPA</div>
+</div>
+
+<!-- ═══ RESUMEN ═══════════════════════════════════════════════ -->
+<div id="page-resumen" class="page active">
+  <div class="metrics" id="metrics-row"></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Distribución de aptitud para celulosa</div>
+      <div style="position:relative;height:220px"><canvas id="chart-aptitud" role="img" aria-label="Distribución de aserraderos por nivel de aptitud para celulosa"></canvas></div>
+      <div id="legend-aptitud" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:0.68rem;color:var(--text2)"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Score de aptitud por provincia</div>
+      <div style="position:relative;height:220px"><canvas id="chart-provincia" role="img" aria-label="Score promedio de aptitud por provincia"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Descortezador instalado</div>
+      <div style="position:relative;height:180px"><canvas id="chart-descortezador" role="img" aria-label="Proporción de aserraderos con descortezador"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Astilladora instalada</div>
+      <div style="position:relative;height:180px"><canvas id="chart-astilladora" role="img" aria-label="Proporción de aserraderos con astilladora operativa"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Interés del informante</div>
+      <div style="position:relative;height:180px"><canvas id="chart-interes" role="img" aria-label="Nivel de interés de los informantes en participar"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Volumen potencial de chips · top 10</div>
+      <div style="position:relative;height:260px"><canvas id="chart-volumen" role="img" aria-label="Volumen potencial de chips por aserradero top 10"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Nivel tecnológico general</div>
+      <div style="position:relative;height:260px"><canvas id="chart-tecnologico" role="img" aria-label="Distribución de niveles tecnológicos"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RANKING ════════════════════════════════════════════════ -->
+<div id="page-ranking" class="page">
+  <div class="filter-bar">
+    <select id="filter-prov" onchange="renderRanking()">
+      <option value="">Todas las provincias</option>
+      <option value="Corrientes">Corrientes</option>
+      <option value="Misiones">Misiones</option>
+    </select>
+    <select id="filter-aptitud" onchange="renderRanking()">
+      <option value="">Toda aptitud</option>
+      <option value="apto">Apto (28–33)</option>
+      <option value="mejoras">Mejoras menores (20–27)</option>
+      <option value="inversion">Inversión mayor (12–19)</option>
+      <option value="no">No apto (0–11)</option>
+    </select>
+    <select id="filter-desc" onchange="renderRanking()">
+      <option value="">Con/sin descortezador</option>
+      <option value="si">Con descortezador</option>
+      <option value="no">Sin descortezador</option>
+    </select>
+    <select id="filter-astill" onchange="renderRanking()">
+      <option value="">Con/sin astilladora</option>
+      <option value="si">Con astilladora operativa</option>
+      <option value="no">Sin astilladora</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="table-scroll">
+      <table class="rank-table" id="ranking-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Aserradero</th>
+            <th>Provincia</th>
+            <th>Score</th>
+            <th>Aptitud</th>
+            <th>Nivel tec.</th>
+            <th>Interés</th>
+            <th>Vol. potencial</th>
+            <th>Descortez.</th>
+            <th>Astilladora</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="detail-panel"></div>
+</div>
+
+<!-- ═══ BRECHA TÉCNICA ════════════════════════════════════════ -->
+<div id="page-brecha" class="page">
+  <div class="grid-2">
+    <div class="card" style="grid-column:span 2">
+      <div class="card-title">Distribución de scores por componente — n° de aserraderos en cada nivel</div>
+      <div class="brecha-grid" id="brecha-grid"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="card-title">Radar promedio — perfil técnico del universo relevado</div>
+    <div class="radar-wrap"><canvas id="chart-radar" role="img" aria-label="Radar de puntaje promedio por componente técnico"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ COMPARAR ══════════════════════════════════════════════ -->
+<div id="page-comparar" class="page">
+  <p style="font-size:0.78rem;color:var(--text2);margin-bottom:16px">Seleccioná hasta 4 aserraderos para comparar en detalle.</p>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Selección de aserraderos</div>
+      <div class="table-scroll">
+        <table class="rank-table" id="compare-select-table">
+          <thead><tr><th>✓</th><th>Aserradero</th><th>Score</th><th>Prov.</th></tr></thead>
+          <tbody id="compare-select-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Radar comparativo</div>
+      <div class="compare-radar"><canvas id="chart-compare-radar" role="img" aria-label="Radar comparativo de aserraderos seleccionados"></canvas></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:0" id="compare-detail-card">
+    <div class="card-title">Detalle comparativo</div>
+    <div class="table-scroll"><table class="rank-table" id="compare-detail-table"></table></div>
+  </div>
+</div>
+
+<!-- ═══ MAPA ══════════════════════════════════════════════════ -->
+<div id="page-mapa" class="page">
+  <div class="grid-2">
+    <div class="card" style="grid-column:span 2">
+      <div class="card-title">Distribución geográfica · Corrientes y Misiones</div>
+      <div style="position:relative" id="map-container">
+        <div class="map-tooltip" id="map-tooltip"></div>
+        <svg id="map-svg" style="width:100%;height:420px"></svg>
+      </div>
+      <div style="display:flex;gap:20px;margin-top:14px;font-size:0.68rem;font-family:var(--mono);color:var(--text2);flex-wrap:wrap">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#59A77F;margin-right:5px"></span>Apto (28–33)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9ADAB7;margin-right:5px"></span>Mejoras menores (20–27)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2F7D53;margin-right:5px"></span>Inversión mayor (12–19)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2B6046;margin-right:5px"></span>No apto (0–11)</span>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Score promedio por departamento</div>
+      <div style="position:relative;height:260px"><canvas id="chart-deptos" role="img" aria-label="Score promedio por departamento"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Volumen potencial por provincia (ton/mes)</div>
+      <div style="position:relative;height:260px"><canvas id="chart-vol-prov" role="img" aria-label="Volumen potencial total de chips por provincia"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════════════
+let DATA = [];
+let compareSelected = [];
+let chartInstances = {};
+
+const BT_KEYS = ['bt_playa_rollizos','bt_descortezado','bt_linea_aserrado','bt_subproductos',
+  'bt_astillado','bt_clasificacion','bt_acopio_chips','bt_despacho','bt_energia','bt_acceso','bt_espacio'];
+const BT_LABELS = ['Playa rollizos','Descortezado','Línea aserrado','Subproductos limpios',
+  'Astillado','Clasificación chips','Acopio chips','Despacho granel','Energía','Acceso','Espacio'];
+
+function scoreColor(s) {
+  if (s >= 28) return '#59A77F';
+  if (s >= 20) return '#9ADAB7';
+  if (s >= 12) return '#2F7D53';
+  return '#2B6046';
+}
+function scoreBadge(s) {
+  const n = parseInt(s);
+  if (n >= 28) return `<span class="score-badge score-apto">${n} Apto</span>`;
+  if (n >= 20) return `<span class="score-badge score-mejoras">${n} Mejoras</span>`;
+  if (n >= 12) return `<span class="score-badge score-inversion">${n} Inversión</span>`;
+  return `<span class="score-badge score-no">${n} No apto</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEMO DATA — 20 aserraderos ficticios representativos
+// ═══════════════════════════════════════════════════════════
+function loadDemo() {
+  const nombres = ['Aserradero San Ignacio','Maderas del Iberá','Pino Norte SA','Forestal Iguazú',
+    'Aserradero Los Pinos','El Dorado Maderas','Monte Hermoso','Forestal Posadas',
+    'Aserradero Virasoro','Maderas Corrientes','Pinos del Sur','Forestal Mercedes',
+    'Aserradero Oberá','Monte Verde Chips','Los Palmares','Forestal Curuzú',
+    'Aserradero Eldorado','Maderas del NEA','Pino Sur SRL','Forestal Apóstoles'];
+  const provs = ['Misiones','Misiones','Corrientes','Misiones','Misiones','Misiones','Corrientes',
+    'Misiones','Corrientes','Corrientes','Corrientes','Corrientes','Misiones','Misiones',
+    'Corrientes','Corrientes','Misiones','Misiones','Corrientes','Misiones'];
+  const deptos = ['San Ignacio','Guaraní','Ituzaingó','Iguazú','Oberá','Eldorado','Mercedes',
+    'Capital','Santo Tomé','Ituzaingó','Curuzú Cuatiá','Mercedes','Oberá','San Ignacio',
+    'Esquina','Curuzú Cuatiá','Eldorado','Montecarlo','Esquina','Apóstoles'];
+  const lats = [-27.2,-26.8,-27.6,-25.6,-27.5,-26.4,-29.2,-27.4,-28.5,-27.5,-29.8,-29.2,-27.5,-27.2,-30.0,-29.5,-26.4,-27.2,-30.0,-27.9];
+  const lons = [-55.5,-54.4,-55.5,-54.6,-55.1,-54.6,-58.1,-55.9,-56.0,-58.0,-58.3,-58.1,-55.1,-55.5,-59.5,-58.0,-54.6,-55.3,-59.5,-55.7];
+
+  DATA = nombres.map((n, i) => {
+    const bt = BT_KEYS.map(() => Math.floor(Math.random() * 4));
+    const score = bt.reduce((a,b) => a+b, 0);
+    return {
+      razon_social: n,
+      provincia: provs[i],
+      departamento: deptos[i],
+      gps_lat: lats[i],
+      gps_lon: lons[i],
+      bt_score_total: score,
+      ...Object.fromEntries(BT_KEYS.map((k,j) => [k, bt[j]])),
+      b2q16_descortezador: Math.random() > 0.5 ? 'Sí, de anillo' : 'No tiene',
+      b4q25_tiene_astilladora: Math.random() > 0.45 ? 'Sí, en operación' : (Math.random() > 0.5 ? 'No tiene' : 'Sí, fuera de servicio'),
+      b7q58_nivel_tec: Math.floor(Math.random() * 5) + 1,
+      b7q59_aptitud_final: Math.floor(Math.random() * 4),
+      b7q60_interes: Math.floor(Math.random() * 4),
+      b7q61_vol_potencial: Math.floor(Math.random() * 2000 + 200),
+      p1_rollizos_mes: Math.floor(Math.random() * 3000 + 500),
+      p3_produccion_real: Math.floor(Math.random() * 1500 + 200),
+      encuestador: 'Demo',
+      fecha: '2025-08-' + String(Math.floor(Math.random()*20+1)).padStart(2,'0'),
+    };
+  });
+  refreshAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CSV LOAD
+// ═══════════════════════════════════════════════════════════
+function loadCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parseCSV(e.target.result);
+  reader.readAsText(file);
+}
+
+async function loadFromSheets() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) return;
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    parseCSV(text);
+  } catch (e) {
+    alert('Error al cargar la Sheet. Asegurate de haberla publicado como CSV (Archivo → Compartir → Publicar en la web → CSV).');
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return;
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+  DATA = lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/"/g,''));
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  });
+  refreshAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+// REFRESH ALL
+// ═══════════════════════════════════════════════════════════
+function refreshAll() {
+  document.getElementById('n-total').textContent = DATA.length + ' aserraderos';
+  renderMetrics();
+  renderCharts();
+  renderRanking();
+  renderBrecha();
+  renderCompareSelect();
+  renderMapa();
+}
+
+// ═══════════════════════════════════════════════════════════
+// METRICS
+// ═══════════════════════════════════════════════════════════
+function renderMetrics() {
+  const scores = DATA.map(d => parseInt(d.bt_score_total)).filter(n => !isNaN(n));
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+  const aptos = scores.filter(s => s >= 28).length;
+  const volTotal = DATA.reduce((s,d) => s + (parseFloat(d.b7q61_vol_potencial)||0), 0);
+  const conAstill = DATA.filter(d => (d.b4q25_tiene_astilladora||'').includes('operación')).length;
+  const conDesc = DATA.filter(d => !(d.b2q16_descortezador||'').includes('No tiene') && (d.b2q16_descortezador||'')).length;
+
+  document.getElementById('metrics-row').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total relevados</div>
+      <div class="metric-val metric-accent">${DATA.length}</div>
+      <div class="metric-sub">aserraderos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Score promedio</div>
+      <div class="metric-val">${avg}</div>
+      <div class="metric-sub">sobre 33 puntos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Aptos sin inversión</div>
+      <div class="metric-val metric-accent">${aptos}</div>
+      <div class="metric-sub">score ≥ 28 pts</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Vol. potencial total</div>
+      <div class="metric-val metric-warn">${(volTotal/1000).toFixed(1)}k</div>
+      <div class="metric-sub">ton/mes chips</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Con astilladora</div>
+      <div class="metric-val">${conAstill}</div>
+      <div class="metric-sub">${DATA.length ? Math.round(conAstill/DATA.length*100) : 0}% del universo</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Con descortezador</div>
+      <div class="metric-val">${conDesc}</div>
+      <div class="metric-sub">${DATA.length ? Math.round(conDesc/DATA.length*100) : 0}% del universo</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════
+function destroyChart(id) {
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+function renderCharts() {
+  renderAptitudChart();
+  renderProvinciaChart();
+  renderDescortezadorChart();
+  renderAstilladoraChart();
+  renderInteresChart();
+  renderVolumenChart();
+  renderTecnologicoChart();
+  renderBrechaRadar();
+  renderDeptosChart();
+  renderVolProvChart();
+}
+
+function renderAptitudChart() {
+  destroyChart('aptitud');
+  const cats = ['Apto (28–33)','Mejoras menores (20–27)','Inversión mayor (12–19)','No apto (0–11)'];
+  const counts = [0,0,0,0];
+  DATA.forEach(d => {
+    const s = parseInt(d.bt_score_total);
+    if (s >= 28) counts[0]++;
+    else if (s >= 20) counts[1]++;
+    else if (s >= 12) counts[2]++;
+    else counts[3]++;
+  });
+  const colors = ['#59A77F','#9ADAB7','#2F7D53','#2B6046'];
+  const ctx = document.getElementById('chart-aptitud').getContext('2d');
+  chartInstances['aptitud'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: cats, datasets: [{ data: counts, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      cutout: '62%' }
+  });
+  const leg = document.getElementById('legend-aptitud');
+  leg.innerHTML = cats.map((c,i) => `<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:${colors[i]}"></span>${c}: ${counts[i]}</span>`).join('');
+}
+
+function renderProvinciaChart() {
+  destroyChart('provincia');
+  const provs = [...new Set(DATA.map(d => d.provincia).filter(Boolean))];
+  const avgs = provs.map(p => {
+    const scores = DATA.filter(d => d.provincia === p).map(d => parseInt(d.bt_score_total)).filter(n => !isNaN(n));
+    return scores.length ? +(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : 0;
+  });
+  const ctx = document.getElementById('chart-provincia').getContext('2d');
+  chartInstances['provincia'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: provs, datasets: [{ label: 'Score promedio', data: avgs,
+      backgroundColor: provs.map((_,i) => ['#59A77F','#3A8B6B'][i%2]), borderWidth: 0, borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { max: 33, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 11 } } },
+        x: { grid: { display: false }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 11 } } } } }
+  });
+}
+
+function renderDonut(id, data, colors) {
+  destroyChart(id);
+  const ctx = document.getElementById('chart-'+id).getContext('2d');
+  chartInstances[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 }, boxWidth: 10, padding: 8 } } }, cutout: '55%' }
+  });
+}
+
+function renderDescortezadorChart() {
+  const si = DATA.filter(d => !(d.b2q16_descortezador||'').includes('No tiene') && (d.b2q16_descortezador||'')).length;
+  const no = DATA.length - si;
+  renderDonut('descortezador', { 'Con descortezador': si, 'Sin descortezador': no }, ['#59A77F','#214732']);
+}
+
+function renderAstilladoraChart() {
+  const operativa = DATA.filter(d => (d.b4q25_tiene_astilladora||'').includes('operación')).length;
+  const fuera = DATA.filter(d => (d.b4q25_tiene_astilladora||'').includes('fuera')).length;
+  const notiene = DATA.length - operativa - fuera;
+  renderDonut('astilladora', { 'Operativa': operativa, 'Fuera de servicio': fuera, 'No tiene': notiene }, ['#59A77F','#9ADAB7','#214732']);
+}
+
+function renderInteresChart() {
+  const counts = {3:0,2:0,1:0,0:0};
+  DATA.forEach(d => { const v = parseInt(d.b7q60_interes); if (!isNaN(v) && v in counts) counts[v]++; });
+  renderDonut('interes', { 'Alto (3)': counts[3], 'Medio (2)': counts[2], 'Bajo (1)': counts[1], 'Nulo (0)': counts[0] },
+    ['#59A77F','#3A8B6B','#9ADAB7','#2B6046']);
+}
+
+function renderVolumenChart() {
+  destroyChart('volumen');
+  const sorted = [...DATA].filter(d => parseFloat(d.b7q61_vol_potencial)>0)
+    .sort((a,b) => parseFloat(b.b7q61_vol_potencial)-parseFloat(a.b7q61_vol_potencial)).slice(0,10);
+  const ctx = document.getElementById('chart-volumen').getContext('2d');
+  chartInstances['volumen'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: sorted.map(d => (d.razon_social||'').split(' ').slice(0,2).join(' ')),
+      datasets: [{ data: sorted.map(d => parseFloat(d.b7q61_vol_potencial)||0),
+        backgroundColor: sorted.map(d => scoreColor(d.bt_score_total)), borderWidth: 0, borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } } } }
+  });
+}
+
+function renderTecnologicoChart() {
+  destroyChart('tecnologico');
+  const counts = [0,0,0,0,0];
+  DATA.forEach(d => { const v = parseInt(d.b7q58_nivel_tec); if (v >= 1 && v <= 5) counts[v-1]++; });
+  const ctx = document.getElementById('chart-tecnologico').getContext('2d');
+  chartInstances['tecnologico'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: ['1 Muy bajo','2 Bajo','3 Medio','4 Alto','5 Muy alto'],
+      datasets: [{ data: counts, backgroundColor: ['#2B6046','#2F7D53','#9ADAB7','#59A77F','#3A8B6B'], borderWidth: 0, borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } },
+        x: { grid: { display: false }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } } } }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RANKING
+// ═══════════════════════════════════════════════════════════
+function renderRanking() {
+  let filtered = [...DATA];
+  const prov = document.getElementById('filter-prov').value;
+  const apt = document.getElementById('filter-aptitud').value;
+  const desc = document.getElementById('filter-desc').value;
+  const astill = document.getElementById('filter-astill').value;
+  if (prov) filtered = filtered.filter(d => d.provincia === prov);
+  if (apt === 'apto') filtered = filtered.filter(d => parseInt(d.bt_score_total) >= 28);
+  else if (apt === 'mejoras') filtered = filtered.filter(d => { const s=parseInt(d.bt_score_total); return s>=20&&s<28; });
+  else if (apt === 'inversion') filtered = filtered.filter(d => { const s=parseInt(d.bt_score_total); return s>=12&&s<20; });
+  else if (apt === 'no') filtered = filtered.filter(d => parseInt(d.bt_score_total) < 12);
+  if (desc === 'si') filtered = filtered.filter(d => !(d.b2q16_descortezador||'').includes('No tiene') && d.b2q16_descortezador);
+  else if (desc === 'no') filtered = filtered.filter(d => (d.b2q16_descortezador||'').includes('No tiene'));
+  if (astill === 'si') filtered = filtered.filter(d => (d.b4q25_tiene_astilladora||'').includes('operación'));
+  else if (astill === 'no') filtered = filtered.filter(d => !(d.b4q25_tiene_astilladora||'').includes('operación'));
+
+  filtered.sort((a,b) => (parseInt(b.bt_score_total)||0)-(parseInt(a.bt_score_total)||0));
+
+  const tbody = document.getElementById('ranking-body');
+  tbody.innerHTML = filtered.map((d,i) => `
+    <tr onclick="showDetail('${encodeURIComponent(d.razon_social||'')}')">
+      <td class="rank-num">${i+1}</td>
+      <td><span class="rank-name">${d.razon_social||'—'}</span></td>
+      <td style="font-size:0.72rem;color:var(--text2)">${d.provincia||'—'}</td>
+      <td>${scoreBadge(d.bt_score_total)}</td>
+      <td style="font-size:0.72rem;color:var(--text2)">${['No apto','Inv. mayor','Mejoras menores','Apto'][parseInt(d.b7q59_aptitud_final)]||'—'}</td>
+      <td style="font-family:var(--mono);font-size:0.75rem;color:var(--text2)">${d.b7q58_nivel_tec||'—'} / 5</td>
+      <td style="font-family:var(--mono);font-size:0.75rem;color:var(--text2)">${d.b7q60_interes||'—'} / 3</td>
+      <td style="font-family:var(--mono);font-size:0.75rem;color:var(--accent2)">${d.b7q61_vol_potencial ? d.b7q61_vol_potencial+' t/m' : '—'}</td>
+      <td style="font-size:0.7rem;color:${(d.b2q16_descortezador||'').includes('No tiene')?'var(--danger)':'var(--accent)'}">${(d.b2q16_descortezador||'').includes('No tiene')?'No':'Sí'}</td>
+      <td style="font-size:0.7rem;color:${(d.b4q25_tiene_astilladora||'').includes('operación')?'var(--accent)':'var(--danger)'}">${(d.b4q25_tiene_astilladora||'').includes('operación')?'Sí':'No'}</td>
+      <td style="color:var(--text3);font-size:0.7rem">▸</td>
+    </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text3)">Sin datos que coincidan con los filtros</td></tr>';
+}
+
+function showDetail(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  const d = DATA.find(x => x.razon_social === name);
+  if (!d) return;
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = `
+    <div class="detail-panel">
+      <h3>${d.razon_social} · ${d.provincia} · ${d.departamento||''}</h3>
+      <div class="detail-grid">
+        ${[
+          ['Score total', scoreBadge(d.bt_score_total)],
+          ['Nivel tecnológico', (d.b7q58_nivel_tec||'—')+' / 5'],
+          ['Aptitud final', ['No apto','Inv. mayor','Mejoras menores','Apto'][parseInt(d.b7q59_aptitud_final)]||'—'],
+          ['Interés informante', (d.b7q60_interes||'—')+' / 3'],
+          ['Vol. potencial chips', (d.b7q61_vol_potencial||'—')+' ton/mes'],
+          ['Plazo estimado', (d.b7q61_plazo||'—')+' meses'],
+          ['Descortezador', d.b2q16_descortezador||'—'],
+          ['Astilladora', d.b4q25_tiene_astilladora||'—'],
+          ['Consumo rollizos', (d.p1_rollizos_mes||'—')+' m³/mes'],
+          ['Producción real', (d.p3_produccion_real||'—')+' m³/mes'],
+          ['GPS', d.gps_lat ? d.gps_lat+', '+d.gps_lon : '—'],
+          ['Encuestador', d.encuestador||'—'],
+        ].map(([l,v]) => `<div class="detail-item"><div class="detail-item-label">${l}</div><div class="detail-item-val">${v}</div></div>`).join('')}
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:0.65rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.06em;margin-bottom:8px">SCORES POR COMPONENTE</div>
+        ${BT_KEYS.map((k,i) => {
+          const v = parseInt(d[k])||0;
+          return `<div class="brecha-row" style="margin-bottom:5px">
+            <span class="brecha-label" style="width:190px">${BT_LABELS[i]}</span>
+            <div class="prog-wrap" style="flex:1">
+              <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${v/3*100}%;background:${scoreColor(v*9)}"></div></div>
+              <span class="prog-val">${v} / 3</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BRECHA TÉCNICA
+// ═══════════════════════════════════════════════════════════
+function renderBrecha() {
+  renderBrechaGrid();
+  renderBrechaRadar();
+}
+
+function renderBrechaGrid() {
+  const grid = document.getElementById('brecha-grid');
+  if (!DATA.length) { grid.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:20px">Cargá datos para ver el análisis</div>'; return; }
+  grid.innerHTML = BT_KEYS.map((k, i) => {
+    const counts = [0,0,0,0];
+    DATA.forEach(d => { const v = parseInt(d[k]); if (!isNaN(v) && v >= 0 && v <= 3) counts[v]++; });
+    const total = counts.reduce((a,b)=>a+b,0)||1;
+    const colors = ['#2B6046','#2F7D53','#9ADAB7','#59A77F'];
+    const labels = ['0','1','2','3'];
+    return `<div class="brecha-row">
+      <span class="brecha-label">${BT_LABELS[i]}</span>
+      <div class="brecha-bars">
+        ${counts.map((c,j) => c > 0 ? `<div class="brecha-bar" style="width:${Math.max(c/total*100,3)}%;background:${colors[j]};flex:${c}">${c >= 3 ? c : ''}</div>` : '').join('')}
+      </div>
+      <span class="brecha-count">${total} tot</span>
+    </div>`;
+  }).join('');
+}
+
+function renderBrechaRadar() {
+  destroyChart('radar');
+  if (!DATA.length) return;
+  const avgs = BT_KEYS.map(k => {
+    const vals = DATA.map(d => parseFloat(d[k])).filter(n => !isNaN(n));
+    return vals.length ? +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : 0;
+  });
+  const ctx = document.getElementById('chart-radar').getContext('2d');
+  chartInstances['radar'] = new Chart(ctx, {
+    type: 'radar',
+    data: { labels: BT_LABELS, datasets: [{ label: 'Promedio universo', data: avgs,
+      backgroundColor: 'rgba(46,191,160,0.15)', borderColor: '#59A77F', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#59A77F' }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      scales: { r: { min: 0, max: 3, ticks: { stepSize: 1, color: '#3A8B6B', font: { family: 'Calibri', size: 10 }, backdropColor: 'transparent' },
+        grid: { color: 'rgba(255,255,255,0.06)' }, angleLines: { color: 'rgba(255,255,255,0.06)' },
+        pointLabels: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } } },
+      plugins: { legend: { labels: { color: '#CCE6D9', font: { family: 'Calibri', size: 11 }, boxWidth: 10 } } } }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPARAR
+// ═══════════════════════════════════════════════════════════
+function renderCompareSelect() {
+  const tbody = document.getElementById('compare-select-body');
+  const sorted = [...DATA].sort((a,b) => (parseInt(b.bt_score_total)||0)-(parseInt(a.bt_score_total)||0));
+  tbody.innerHTML = sorted.map(d => {
+    const sel = compareSelected.includes(d.razon_social);
+    return `<tr class="sel-row${sel?' selected':''}" onclick="toggleCompare('${encodeURIComponent(d.razon_social||'')}')">
+      <td style="color:var(--accent);font-family:var(--mono)">${sel?'✓':''}</td>
+      <td>${d.razon_social||'—'}</td>
+      <td>${scoreBadge(d.bt_score_total)}</td>
+      <td style="font-size:0.7rem;color:var(--text2)">${d.provincia||'—'}</td>
+    </tr>`;
+  }).join('');
+  renderCompareRadar();
+  renderCompareDetail();
+}
+
+function toggleCompare(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  const idx = compareSelected.indexOf(name);
+  if (idx > -1) compareSelected.splice(idx, 1);
+  else if (compareSelected.length < 4) compareSelected.push(name);
+  renderCompareSelect();
+}
+
+const COMPARE_COLORS = ['#59A77F','#3A8B6B','#9ADAB7','#2B6046'];
+
+function renderCompareRadar() {
+  destroyChart('compare-radar');
+  if (!compareSelected.length) return;
+  const datasets = compareSelected.map((name, i) => {
+    const d = DATA.find(x => x.razon_social === name);
+    if (!d) return null;
+    const vals = BT_KEYS.map(k => parseFloat(d[k])||0);
+    return { label: name.split(' ').slice(0,3).join(' '), data: vals,
+      backgroundColor: COMPARE_COLORS[i]+'26', borderColor: COMPARE_COLORS[i],
+      borderWidth: 2, pointRadius: 4, pointBackgroundColor: COMPARE_COLORS[i] };
+  }).filter(Boolean);
+  const ctx = document.getElementById('chart-compare-radar').getContext('2d');
+  chartInstances['compare-radar'] = new Chart(ctx, {
+    type: 'radar',
+    data: { labels: BT_LABELS, datasets },
+    options: { responsive: true, maintainAspectRatio: false,
+      scales: { r: { min: 0, max: 3, ticks: { stepSize: 1, color: '#3A8B6B', font: { family: 'Calibri', size: 9 }, backdropColor: 'transparent' },
+        grid: { color: 'rgba(255,255,255,0.06)' }, angleLines: { color: 'rgba(255,255,255,0.06)' },
+        pointLabels: { color: '#CCE6D9', font: { family: 'Calibri', size: 9 } } } },
+      plugins: { legend: { labels: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 }, boxWidth: 8, padding: 8 } } } }
+  });
+}
+
+function renderCompareDetail() {
+  const table = document.getElementById('compare-detail-table');
+  if (!compareSelected.length) { table.innerHTML = ''; return; }
+  const rows = [['Campo', ...compareSelected]];
+  const fields = [
+    ['Score total', d => d.bt_score_total||'—'],
+    ['Provincia', d => d.provincia||'—'],
+    ['Nivel tec.', d => (d.b7q58_nivel_tec||'—')+'/5'],
+    ['Aptitud final', d => ['No apto','Inv. mayor','Mejoras','Apto'][parseInt(d.b7q59_aptitud_final)]||'—'],
+    ['Interés', d => (d.b7q60_interes||'—')+'/3'],
+    ['Vol. potencial', d => (d.b7q61_vol_potencial||'—')+' t/m'],
+    ['Descortezador', d => (d.b2q16_descortezador||'').includes('No')?'No':'Sí'],
+    ['Astilladora', d => (d.b4q25_tiene_astilladora||'').includes('operación')?'Sí':'No'],
+    ['Rollizos/mes', d => (d.p1_rollizos_mes||'—')+' m³'],
+    ['Prod. real', d => (d.p3_produccion_real||'—')+' m³'],
+  ];
+  const datasets = compareSelected.map(name => DATA.find(x => x.razon_social === name));
+  table.innerHTML = `
+    <thead><tr>${['Campo',...compareSelected.map(n=>n.split(' ').slice(0,2).join(' '))].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${fields.map(([label, fn]) =>
+      `<tr><td style="color:var(--text2);font-size:0.72rem">${label}</td>${datasets.map(d => d ? `<td style="font-family:var(--mono);font-size:0.75rem">${fn(d)}</td>` : '<td>—</td>').join('')}</tr>`
+    ).join('')}</tbody>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAPA
+// ═══════════════════════════════════════════════════════════
+function renderMapa() {
+  renderDeptosChart();
+  renderVolProvChart();
+  renderMapPoints();
+}
+
+function renderMapPoints() {
+  const svg = d3.select('#map-svg');
+  svg.selectAll('*').remove();
+  if (!DATA.length) return;
+
+  const w = document.getElementById('map-svg').getBoundingClientRect().width || 700;
+  const h = 420;
+
+  // Bounding box for Corrientes + Misiones
+  const projection = d3.geoMercator()
+    .center([-56.5, -27.8])
+    .scale(2600)
+    .translate([w/2, h/2]);
+
+  // Draw simple province outlines using approximate polygons
+  const corrientes = [[-58.2,-28.0],[-56.8,-27.0],[-55.7,-27.2],[-55.3,-28.3],[-56.0,-29.5],[-57.5,-30.5],[-59.5,-30.0],[-58.2,-28.0]];
+  const misiones = [[-55.7,-27.2],[-54.2,-26.4],[-53.6,-26.8],[-53.8,-27.8],[-55.0,-28.1],[-55.7,-27.2]];
+
+  const lineGen = d3.line().x(d=>projection(d)[0]).y(d=>projection(d)[1]);
+
+  svg.append('path').attr('d', lineGen(corrientes)+'Z')
+    .attr('fill', '#1B392D').attr('stroke', '#2B6046').attr('stroke-width', 1.5);
+  svg.append('path').attr('d', lineGen(misiones)+'Z')
+    .attr('fill', '#214732').attr('stroke', '#2B6046').attr('stroke-width', 1.5);
+
+  svg.append('text').attr('x', projection([-57.5,-29])[0]).attr('y', projection([-57.5,-29])[1])
+    .attr('fill', '#3A8B6B').attr('font-size', '10px').attr('font-family', 'Calibri').attr('text-anchor', 'middle').text('CORRIENTES');
+  svg.append('text').attr('x', projection([-54.8,-27.2])[0]).attr('y', projection([-54.8,-27.2])[1])
+    .attr('fill', '#3A8B6B').attr('font-size', '10px').attr('font-family', 'Calibri').attr('text-anchor', 'middle').text('MISIONES');
+
+  const tooltip = document.getElementById('map-tooltip');
+  const container = document.getElementById('map-container');
+
+  DATA.filter(d => d.gps_lat && d.gps_lon).forEach(d => {
+    const [x, y] = projection([parseFloat(d.gps_lon), parseFloat(d.gps_lat)]);
+    const score = parseInt(d.bt_score_total)||0;
+    const r = 6 + (parseFloat(d.b7q61_vol_potencial)||0) / 800;
+
+    svg.append('circle')
+      .attr('cx', x).attr('cy', y)
+      .attr('r', Math.min(r, 16))
+      .attr('fill', scoreColor(score))
+      .attr('fill-opacity', 0.85)
+      .attr('stroke', '#0F2E1E')
+      .attr('stroke-width', 1.5)
+      .style('cursor', 'pointer')
+      .on('mouseover', (event) => {
+        tooltip.style.display = 'block';
+        tooltip.style.left = (event.offsetX + 12) + 'px';
+        tooltip.style.top = (event.offsetY - 10) + 'px';
+        tooltip.innerHTML = `<b>${d.razon_social}</b><br>${d.provincia} · ${d.departamento}<br>Score: ${score}/33 · Vol: ${d.b7q61_vol_potencial||'—'} t/m`;
+      })
+      .on('mouseout', () => { tooltip.style.display = 'none'; });
+  });
+}
+
+function renderDeptosChart() {
+  destroyChart('deptos');
+  const deptoMap = {};
+  DATA.forEach(d => {
+    if (!d.departamento) return;
+    if (!deptoMap[d.departamento]) deptoMap[d.departamento] = [];
+    const s = parseInt(d.bt_score_total);
+    if (!isNaN(s)) deptoMap[d.departamento].push(s);
+  });
+  const deptos = Object.keys(deptoMap).sort();
+  const avgs = deptos.map(dep => +(deptoMap[dep].reduce((a,b)=>a+b,0)/deptoMap[dep].length).toFixed(1));
+  const ctx = document.getElementById('chart-deptos').getContext('2d');
+  chartInstances['deptos'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: deptos, datasets: [{ data: avgs,
+      backgroundColor: avgs.map(s => scoreColor(s)), borderWidth: 0, borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { max: 33, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 10 } } } } }
+  });
+}
+
+function renderVolProvChart() {
+  destroyChart('vol-prov');
+  const provs = [...new Set(DATA.map(d=>d.provincia).filter(Boolean))];
+  const totals = provs.map(p => DATA.filter(d=>d.provincia===p).reduce((s,d)=>s+(parseFloat(d.b7q61_vol_potencial)||0),0));
+  const ctx = document.getElementById('chart-vol-prov').getContext('2d');
+  chartInstances['vol-prov'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: provs, datasets: [{ label: 'ton/mes potencial', data: totals,
+      backgroundColor: ['#59A77F','#3A8B6B'], borderWidth: 0, borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 11 } } },
+        x: { grid: { display: false }, ticks: { color: '#CCE6D9', font: { family: 'Calibri', size: 11 } } } } }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════════════════
+function exportCSV() {
+  if (!DATA.length) return;
+  const keys = Object.keys(DATA[0]);
+  const rows = [keys.join(','), ...DATA.map(d => keys.map(k => `"${(d[k]||'').toString().replace(/"/g,'""')}"`).join(','))];
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'relevamiento_aserraderos.csv'; a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'mapa') setTimeout(renderMapPoints, 50);
+  if (id === 'comparar') renderCompareSelect();
+}
+
+// Initial empty state
+window.addEventListener('load', () => {
+  document.querySelectorAll('.page').forEach(p => {
+    if (!p.querySelector('.empty-state') && p.id !== 'page-resumen') return;
+  });
+});
+</script>
+</body>
+</html>
