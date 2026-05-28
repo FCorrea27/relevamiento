@@ -502,27 +502,46 @@ function generateIcon(size) {
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext('2d');
   const r = size * 0.17;
-  // Fondo
+  // Fondo redondeado
   ctx.fillStyle = '#0F2E1E';
   ctx.beginPath();
   ctx.roundRect(0, 0, size, size, r);
   ctx.fill();
-  // Árbol
-  ctx.fillStyle = '#59A77F';
+  // Pino estilo líneas — color acento
+  ctx.strokeStyle = '#59A77F';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   const cx = size / 2;
-  const s = size / 192;
-  // Copa del árbol (polígono)
-  ctx.beginPath();
-  ctx.moveTo(cx, 20*s);
-  ctx.lineTo(130*s, 80*s); ctx.lineTo(110*s, 80*s);
-  ctx.lineTo(125*s, 115*s); ctx.lineTo(107*s, 115*s);
-  ctx.lineTo(120*s, 148*s); ctx.lineTo(72*s, 148*s);
-  ctx.lineTo(85*s, 115*s); ctx.lineTo(67*s, 115*s);
-  ctx.lineTo(82*s, 80*s); ctx.lineTo(62*s, 80*s);
-  ctx.closePath();
-  ctx.fill();
+  const u = size / 100;
+  const lw = size * 0.07;
+  ctx.lineWidth = lw;
   // Tronco
-  ctx.fillRect(86*s, 148*s, 20*s, 28*s);
+  ctx.beginPath();
+  ctx.moveTo(cx, 88*u);
+  ctx.lineTo(cx, 72*u);
+  ctx.stroke();
+  // Rama inferior izq/der
+  ctx.beginPath(); ctx.moveTo(cx, 72*u); ctx.lineTo(18*u, 72*u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 72*u); ctx.lineTo(82*u, 72*u); ctx.stroke();
+  // Rama media izq/der
+  ctx.beginPath(); ctx.moveTo(cx, 58*u); ctx.lineTo(26*u, 58*u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 58*u); ctx.lineTo(74*u, 58*u); ctx.stroke();
+  // Rama superior izq/der
+  ctx.beginPath(); ctx.moveTo(cx, 44*u); ctx.lineTo(34*u, 44*u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 44*u); ctx.lineTo(66*u, 44*u); ctx.stroke();
+  // Rama pequeña izq/der
+  ctx.beginPath(); ctx.moveTo(cx, 32*u); ctx.lineTo(40*u, 32*u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 32*u); ctx.lineTo(60*u, 32*u); ctx.stroke();
+  // Tronco vertical completo (eje central)
+  ctx.beginPath();
+  ctx.moveTo(cx, 88*u);
+  ctx.lineTo(cx, 14*u);
+  ctx.stroke();
+  // Punta
+  ctx.beginPath();
+  ctx.moveTo(cx, 14*u);
+  ctx.lineTo(cx, 12*u);
+  ctx.stroke();
   return canvas.toDataURL('image/png');
 }
 
@@ -560,8 +579,17 @@ document.head.appendChild(appleIcon);
     <div id="topbar-left">
       <svg id="topbar-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
         <rect width="40" height="40" rx="8" fill="#1B392D"/>
-        <polygon points="20,4 27,16 23,16 26,23 22,23 25,31 20,31 15,31 18,23 14,23 17,16 13,16" fill="#59A77F"/>
-        <rect x="18" y="31" width="4" height="6" rx="1" fill="#59A77F"/>
+        <g stroke="#59A77F" stroke-width="2.8" stroke-linecap="round">
+          <line x1="20" y1="35" x2="20" y2="5"/>
+          <line x1="20" y1="29" x2="8" y2="29"/>
+          <line x1="20" y1="29" x2="32" y2="29"/>
+          <line x1="20" y1="23" x2="10" y2="23"/>
+          <line x1="20" y1="23" x2="30" y2="23"/>
+          <line x1="20" y1="17" x2="13" y2="17"/>
+          <line x1="20" y1="17" x2="27" y2="17"/>
+          <line x1="20" y1="11" x2="15" y2="11"/>
+          <line x1="20" y1="11" x2="25" y2="11"/>
+        </g>
       </svg>
       <div>
         <div id="topbar-title">Propietarios Forestales</div>
@@ -1062,23 +1090,7 @@ document.head.appendChild(appleIcon);
 ══════════════════════════════════════════════════════ -->
 <script>
 if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'propietarios-v1';
-    self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
-      self.skipWaiting();
-    });
-    self.addEventListener('activate', e => {
-      e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-      self.clients.claim();
-    });
-    self.addEventListener('fetch', e => {
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => new Response('Offline'))));
-    });
-  `;
-  const swBlob = new Blob([swCode], {type:'text/javascript'});
-  const swUrl  = URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swUrl).catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 </script>
 
